@@ -1,5 +1,8 @@
 package ant.gasmeter;
 
+import ant.gasmeter.BLE_Handler.BLEReceiver;
+import ant.gasmeter.utils.DataPoint;
+import ant.gasmeter.utils.Ref;
 import javafx.application.Platform;
 import javafx.collections.ListChangeListener;
 import javafx.concurrent.Task;
@@ -16,7 +19,11 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-
+/**
+ * TODO add a window to choose BTdevice if necessary
+ * TODO add a window to choose BLEHost
+ *
+ * **/
 public class Controller {
     public Pane chartPane;
     private DataManagement DATA;
@@ -26,13 +33,14 @@ public class Controller {
     @FXML
     private TextField BTstatus;
 
-    BLReceiver BLE = new BLReceiver();
+    BLEReceiver BLE;
     Thread BluetoothManager;
 
 
-    public void setDataManagement(DataManagement data) {
+    public void initialize(DataManagement data) {
         this.DATA = data;
         setupChart(data);
+        BLE = new BLEReceiver(DATA);
         /*this.DATA.points.addListener((ListChangeListener<DataPoint>) _ -> {
             refreshChart();
         });
@@ -89,18 +97,19 @@ public class Controller {
         DATA.writeStateToCSV("true");
     }
 
-    public void setupBT(){
-        BLE = new BLReceiver();
-        BTstatus.textProperty().bind(BLE.messageProperty()); // optional
+    @FXML
+    public void onBTClick(){
+        BLE.initializeBluetoothConnection(BTstatus);
+    }
 
-        BluetoothManager = new Thread(BLE);
-        BluetoothManager.setDaemon(true);
-        BluetoothManager.start();
+    @FXML
+    public void closeBT(){
+        BLE.closeConnection();
     }
 
     public void shutdown(){
         if (BLE != null) {
-            BLE.cancel();  // custom stop logic
+            BLE.closeConnection();
         }
         if (BluetoothManager != null && BluetoothManager.isAlive()) {
             BluetoothManager.interrupt();
@@ -141,7 +150,7 @@ public class Controller {
                 LocalDateTime time = LocalDateTime.parse(date,formatter);
                 Duration duration = Duration.between(datasource.BaseTime,time);
                 float days = duration.toDays();
-                gasflow+=Ref.VOLUMETRIC_RESOLUTION;
+                gasflow+= Ref.VOLUMETRIC_RESOLUTION;
                 series.getData().add(new XYChart.Data<>(days,gasflow));
             }
         }

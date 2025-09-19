@@ -1,11 +1,13 @@
-package ant.gasmeter;
+package ant.gasmeter.BLE_Handler;
 
+import ant.gasmeter.DataManagement;
 import com.github.hypfvieh.bluetooth.DeviceManager;
 import com.github.hypfvieh.bluetooth.wrapper.BluetoothAdapter;
 import com.github.hypfvieh.bluetooth.wrapper.BluetoothDevice;
 import com.github.hypfvieh.bluetooth.wrapper.BluetoothGattCharacteristic;
 import com.github.hypfvieh.bluetooth.wrapper.BluetoothGattService;
 import javafx.concurrent.Task;
+import javafx.scene.control.TextField;
 import org.freedesktop.dbus.exceptions.DBusException;
 
 import java.util.List;
@@ -14,13 +16,19 @@ public class BLEReceiver {
     BluetoothAdapter BTadapter;
     DeviceManager deviceManager;
     BluetoothDevice sensor;
+    DataManagement DATA;
 
     String ARDUINO_BLE_ADDRESS = "f4:12:fa:6f:85:c5";
     String ARDUINO_SERVICE_UUID = "a117480e-14a0-482e-b417-629d8829a1c0";
     String SENSOR_CHARACTERISTIC_UUID = "1d1c079e-e607-4faa-9005-7bc16934f4a0";
 
-    public void initializeBluetoothConnection(){
-        Task<Void> task = new Task<>() {
+    public BLEReceiver(DataManagement _DATA){
+        DATA = _DATA;
+    }
+
+    public void initializeBluetoothConnection(TextField BTstatus){
+        Task<Void> attemptConnection = new Task<>() {
+
             @Override
             protected Void call() throws Exception {
                 try{
@@ -77,10 +85,11 @@ public class BLEReceiver {
                     updateMessage("Bluetooth error: " + ex.getMessage());
                     throw new RuntimeException(ex);
                 }
-                deviceManager.registerPropertyHandler(new GATTNotificationHandler(Gatt.getDbusPath()));
+                deviceManager.registerPropertyHandler(new GATTNotificationHandler(Gatt.getDbusPath(),DATA));
             }
         };
-        Thread thread = new Thread(task);
+        BTstatus.textProperty().bind(attemptConnection.messageProperty());
+        Thread thread = new Thread(attemptConnection);
         thread.setDaemon(true);
         thread.start();
     }

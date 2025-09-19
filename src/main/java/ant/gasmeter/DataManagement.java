@@ -1,5 +1,7 @@
 package ant.gasmeter;
 
+import ant.gasmeter.utils.DataPoint;
+import ant.gasmeter.utils.Ref;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -22,7 +24,7 @@ public class DataManagement {
 
     //creates initial file for data logging;
     public DataManagement(){
-        Path outputDir = Paths.get(System.getProperty("user.home"),Ref.Name);
+        Path outputDir = Paths.get(System.getProperty("user.home"), Ref.Name);
         CSV = outputDir.resolve(String.format("Data_%s.csv",getTime()));
         BaseTime = LocalDateTime.now();
 

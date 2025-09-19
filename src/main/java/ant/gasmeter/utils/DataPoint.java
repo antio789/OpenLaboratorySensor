@@ -1,4 +1,4 @@
-package ant.gasmeter;
+package ant.gasmeter.utils;
 
 import java.time.LocalDateTime;
 
