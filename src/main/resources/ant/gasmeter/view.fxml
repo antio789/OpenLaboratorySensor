@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.chart.*?>
+<?import javafx.geometry.Insets?>
+
+<Pane xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ant.gasmeter.Controller">
+    <VBox spacing="10" padding="10">
+        <HBox spacing="10" alignment="CENTER">
+            <Label text="BLE Address:" />
+            <TextField fx:id="bleAddressField" promptText="e.g. f4:12:fa:6f:85:c5" prefWidth="200" />
+            <Button text="Connect" onAction="#onConnectClick" />
+            <Button text="Disconnect" onAction="#onDisconnectClick" />
+        </HBox>
+        
+        <TextField fx:id="BTstatus" editable="false" />
+        
+        <Pane fx:id="chartPane" prefHeight="400" prefWidth="600" />
+        
+        <HBox spacing="10" alignment="CENTER">
+            <Button text="Copy CSV" onAction="#onCopyButtonClick" />
+            <Button text="Data" onAction="#onDataClick" />
+            <Label fx:id="copyStatusLabel" />
+        </HBox>
+    </VBox>
+</Pane>

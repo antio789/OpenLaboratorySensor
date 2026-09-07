@@ -15,8 +15,15 @@ public class BLReceiver extends Task<Void> {
     BluetoothAdapter BTadapter;
     DeviceManager deviceManager;
     BluetoothDevice sensor;
+    private final String bleAddress;
 
-    String ARDUINO_BLE_ADDRESS = "f4:12:fa:6f:85:c5";
+    public BLReceiver(String bleAddress) {
+        this.bleAddress = bleAddress;
+    }
+
+    public BLReceiver() {
+        this.bleAddress = "f4:12:fa:6f:85:c5";
+    }
 
     String ARDUINO_SERVICE_UUID = "a117480e-14a0-482e-b417-629d8829a1c0";
     String SENSOR_CHARACTERISTIC_UUID = "1d1c079e-e607-4faa-9005-7bc16934f4a0";
@@ -30,7 +37,7 @@ public class BLReceiver extends Task<Void> {
             BTadapter = deviceManager.getAdapters().getFirst();
             deviceManager.setDefaultAdapter(BTadapter);
             updateMessage("searching for device");
-            sensor = findAndConnectDeviceByMac(ARDUINO_BLE_ADDRESS);
+            sensor = findAndConnectDeviceByMac(bleAddress);
             if (sensor != null) {
                 while(!isCancelled()){
                     listen(sensor);

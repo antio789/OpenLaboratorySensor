@@ -25,8 +25,10 @@ public class Controller {
     private Label copyStatusLabel;
     @FXML
     private TextField BTstatus;
+    @FXML
+    private TextField bleAddressField;
 
-    BLReceiver BLE = new BLReceiver();
+    BLReceiver BLE;
     Thread BluetoothManager;
 
 
@@ -91,20 +93,44 @@ public class Controller {
 
     public void setupBT(){
         BLE = new BLReceiver();
-        BTstatus.textProperty().bind(BLE.messageProperty()); // optional
+        BTstatus.textProperty().bind(BLE.messageProperty());
+    }
+
+    @FXML
+    protected void onConnectClick() {
+        String bleAddress = bleAddressField.getText().trim();
+        if (bleAddress.isEmpty()) {
+            updateBTstatus("Please enter a BLE address");
+            return;
+        }
+        
+        if (BluetoothManager != null && BluetoothManager.isAlive()) {
+            updateBTstatus("Already connected. Disconnect first.");
+            return;
+        }
+        
+        BLE = new BLReceiver(bleAddress);
+        BTstatus.textProperty().unbind();
+        BTstatus.textProperty().bind(BLE.messageProperty());
 
         BluetoothManager = new Thread(BLE);
         BluetoothManager.setDaemon(true);
         BluetoothManager.start();
     }
 
-    public void shutdown(){
+    @FXML
+    protected void onDisconnectClick() {
         if (BLE != null) {
-            BLE.cancel();  // custom stop logic
+            BLE.cancel();
         }
         if (BluetoothManager != null && BluetoothManager.isAlive()) {
             BluetoothManager.interrupt();
         }
+        updateBTstatus("Disconnected");
+    }
+
+    public void shutdown(){
+        onDisconnectClick();
     }
 
     private void refreshChart(){
