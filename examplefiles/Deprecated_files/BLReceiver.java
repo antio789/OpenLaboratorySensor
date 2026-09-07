@@ -1,4 +1,4 @@
-package ant.gasmeter;
+package ant.gasmeter.BLE_Handler;
 
 import com.github.hypfvieh.bluetooth.DeviceManager;
 import com.github.hypfvieh.bluetooth.wrapper.BluetoothAdapter;
