@@ -20,4 +20,5 @@
     <Button text="start bluetooth connection" onAction="#onBTClick"/>
     <TextField fx:id="BTstatus" promptText="inactive" />
     <Button text="close BT connection" onAction="#closeBT"/>
+    <Button text="Scan for BLE Devices" onAction="#onBLEScanClick"/>
 </VBox>
