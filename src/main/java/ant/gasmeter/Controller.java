@@ -1,6 +1,7 @@
 package ant.gasmeter;
 
 import ant.gasmeter.BLE_Handler.BLEReceiver;
+import ant.gasmeter.BLE_Handler.BLEScanner;
 import ant.gasmeter.utils.DataPoint;
 import ant.gasmeter.utils.Ref;
 import javafx.application.Platform;
@@ -34,6 +35,7 @@ public class Controller {
     private TextField BTstatus;
 
     BLEReceiver BLE;
+    BLEScanner BLEScanner;
     Thread BluetoothManager;
 
 
@@ -41,6 +43,7 @@ public class Controller {
         this.DATA = data;
         setupChart(data);
         BLE = new BLEReceiver(DATA);
+        BLEScanner = new BLEScanner();
         /*this.DATA.points.addListener((ListChangeListener<DataPoint>) _ -> {
             refreshChart();
         });
@@ -100,6 +103,11 @@ public class Controller {
     @FXML
     public void onBTClick(){
         BLE.initializeBluetoothConnection(BTstatus);
+    }
+
+    @FXML
+    public void onBLEScanClick() {
+        BLEScanner.scanForDevices(BTstatus);
     }
 
     @FXML
