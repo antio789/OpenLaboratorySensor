@@ -59,12 +59,15 @@ tasks.withType<Test> {
 
 jlink {
     imageZip.set(layout.buildDirectory.file("${layout.buildDirectory}/distributions/app-${javafx.platform.classifier}.zip"))
-    options.set(listOf("--strip-debug", "--compress", "2", "--no-header-files", "--no-man-pages"))
+    options.set(listOf("--strip-debug", "--compress", "2", "--no-header-files", "--no-man-pages", "--bind-services"))
     launcher {
-        name = "Gas Meter"
+        name = "Gas Meter 1009"
     }
+    jpackage.skipInstaller = true
     targetPlatform("linux", System.getenv("JDK_LINUX_HOME"))
+
     targetPlatform("linux-arm64", "/home/main/Documents/coding/zulu25.28.85-ca-fx-jdk25.0.0-linux_aarch64")
 }
+
 
 
