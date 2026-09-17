@@ -10,7 +10,6 @@ import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
-import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
@@ -22,14 +21,18 @@ import java.util.*;
 
 public class BLEScanner {
     private BluetoothAdapter adapter;
+    record DeviceData(String name, String[] uuids) {}
 
     //TODO: show different devices and propose to select instead of dumping everything
     public BLEScanner() {
     }
 
     public void scanForDevices(TextField statusField) {
-        ObservableList<BluetoothDevice> deviceItems = FXCollections.observableArrayList();
-        ListView<BluetoothDevice> deviceListView = createDeviceListView(deviceItems);
+        Map<String, DeviceData> deviceMap = new HashMap<>();
+        ObservableList<String> deviceItems = FXCollections.observableArrayList();
+        ListView<String> deviceListView = new ListView<>(deviceItems);
+        deviceListView.setPrefSize(350,450);
+
         Button selectButton = new Button("Select");
         Button stopButton = new Button("Cancel");
 
@@ -42,82 +45,69 @@ public class BLEScanner {
         stage.show();
 
         selectButton.setOnAction(_ -> {
-            BluetoothDevice selectedDevice = deviceListView.getSelectionModel().getSelectedItem();
-            if (selectedDevice == null) return;
+            String selectedDevice = deviceListView.getSelectionModel().getSelectedItem();
+            if (selectedDevice != null){
+                exportData(deviceMap.get(selectedDevice));
+            }
             stage.close();
         });
-        Task<List<BluetoothDevice>> scanTask = new Task<>() {
+        Task<Void> scanTask = new Task<>() {
             @Override
-            protected List<BluetoothDevice> call(){
+            protected Void call() {
                 try {
                     this.updateMessage("Initializing BLE scan...");
                     DeviceManager deviceManager = DeviceManager.createInstance(false);
                     adapter = deviceManager.getAdapters().getFirst();
                     deviceManager.setDefaultAdapter(adapter);
-                    
+
                     if (!adapter.isPowered()) {
                         adapter.setPowered(true);
                         Thread.sleep(1000);
                     }
                     adapter.startDiscovery();
                     this.updateMessage("Scanning for BLE devices...");
-                    while(!isCancelled()){
+                    while (!isCancelled()) {
                         List<BluetoothDevice> discovered = deviceManager.getDevices(false);
-                        List<BluetoothDevice> scanning = discovered.stream().filter(dev -> dev.getName()!=null && dev.getUuids().length>0).toList();
-                        if(!scanning.isEmpty()){
+                        List<BluetoothDevice> scanning = discovered.stream().filter(dev -> dev.getName() != null && dev.getUuids() != null && dev.getUuids().length > 0).toList();
+                        if (!scanning.isEmpty()) {
                             Platform.runLater(() -> {
                                 for (BluetoothDevice device : scanning) {
-                                    if(!deviceItems.contains(device)) deviceItems.add(device);
+                                    String deviceDisplay = device.getName() + " : " + Arrays.toString(device.getUuids());
+                                    if (!deviceItems.contains(deviceDisplay)) {
+                                        deviceItems.add(deviceDisplay);
+                                        deviceMap.put(deviceDisplay, new DeviceData(device.getName(), device.getUuids().clone()));
+                                    }
                                 }
                             });
                         }
                     }
-                    List<BluetoothDevice> devices = deviceManager.getDevices(false);
-                    this.updateMessage("Found " + devices.size() + " devices");
-                    this.updateMessage("Devices saved to CSV");
-                    return devices;
-                    
                 } catch (Exception e) {
                     this.updateMessage("Scan failed: " + e.getMessage());
                     e.printStackTrace();
                 }
                 return null;
             }
+
             @Override
             protected void cancelled() {
                 try {
                     adapter.stopDiscovery();
-                } catch (Exception ignored) {}
+                } catch (Exception ignored) {
+                }
             }
         };
-        stopButton.setOnAction(event -> {
+        stopButton.setOnAction(_ -> {
             scanTask.cancel();
             stage.close();
         });
         statusField.textProperty().bind(scanTask.messageProperty());
 
-        scanTask.setOnSucceeded(event -> {
-            List<BluetoothDevice> devices = scanTask.getValue();
-            
-            statusField.textProperty().unbind();
-            statusField.setText("Devices saved to CSV");
-        });
         Thread thread = new Thread(scanTask);
         thread.setDaemon(true);
         thread.start();
     }
 
-    private static ListView<BluetoothDevice> createDeviceListView(ObservableList<BluetoothDevice> deviceItems) {
-        ListView<BluetoothDevice> deviceListView = new ListView<>(deviceItems);
-        deviceListView.setPrefSize(350, 200);
-        deviceListView.setCellFactory(_ -> new ListCell<>() {
-            @Override
-            protected void updateItem(BluetoothDevice device, boolean empty) {
-                super.updateItem(device, empty);
-                if (empty || device == null) setText(null);
-                else setText(device.getName()+ " : " + Arrays.toString(device.getUuids()));
-            }
-        });
-        return deviceListView;
+    private void exportData(DeviceData data){
+
     }
 }
