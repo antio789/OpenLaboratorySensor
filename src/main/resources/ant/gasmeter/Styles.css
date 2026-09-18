@@ -11,18 +11,15 @@
     -fx-background-color: -fx-focus-color;
 }
 
-.button {
-    -fx-pref-width: 200px;
-    -fx-padding: 8px 16px;
-    -fx-max-width: 200px;
+.scroll-pane {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
 }
 
-.text-field {
-    -fx-pref-width: 200px;
-    -fx-max-width: 200px;
-    -fx-padding: 8px 16px;
+.scroll-pane > .viewport {
+    -fx-background-color: transparent;
 }
 
-.pane {
-    -fx-background-color: white;
+.scroll-bar:vertical {
+    -fx-background-color: -fx-background;
 }

@@ -6,7 +6,6 @@
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.layout.VBox?>
-<?import javafx.scene.layout.HBox?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.layout.Pane?>
 <?import javafx.scene.control.TextField?>
@@ -15,31 +14,23 @@
     <tabs>
         <Tab text="Overview">
             <content>
-                <VBox alignment="CENTER" spacing="20.0" xmlns:fx="http://javafx.com/fxml">
-                    <padding>
-                        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
-                    </padding>
-                    <Label fx:id="copyStatusLabel"/>
-                    <HBox spacing="10.0" alignment="CENTER">
-                        <Button text="Copy" onAction="#onCopyButtonClick"/>
-                    </HBox>
-                    <Pane fx:id="chartPane" prefWidth="500" prefHeight="300"/>
-                    <HBox spacing="10.0" alignment="CENTER">
-                        <Button text="Add Point" onAction="#onDataClick"/>
-                    </HBox>
-                    <HBox spacing="10.0" alignment="CENTER">
-                        <Button text="Start Bluetooth Connection" onAction="#onBTClick"/>
-                    </HBox>
-                    <HBox spacing="10.0" alignment="CENTER">
-                        <TextField fx:id="BTstatus" promptText="inactive"/>
-                    </HBox>
-                    <HBox spacing="10.0" alignment="CENTER">
-                        <Button text="Close BT Connection" onAction="#closeBT"/>
-                    </HBox>
-                    <HBox spacing="10.0" alignment="CENTER">
-                        <Button text="Scan for BLE Devices" onAction="#onBLEScanClick"/>
-                    </HBox>
-                </VBox>
+                <ScrollPane fitToWidth="true" fitToHeight="true">
+                    <content>
+                        <VBox spacing="20.0">
+                            <padding>
+                                <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
+                            </padding>
+                            <Label fx:id="copyStatusLabel"/>
+                            <Button text="Copy" onAction="#onCopyButtonClick" maxWidth="200"/>
+                            <Pane fx:id="chartPane" prefWidth="500" prefHeight="300" minWidth="500" minHeight="300"/>
+                            <Button text="Add Point" onAction="#onDataClick" maxWidth="200"/>
+                            <Button text="Start Bluetooth Connection" onAction="#onBTClick" maxWidth="200"/>
+                            <TextField fx:id="BTstatus" promptText="inactive" maxWidth="200"/>
+                            <Button text="Close BT Connection" onAction="#closeBT" maxWidth="200"/>
+                            <Button text="Scan for BLE Devices" onAction="#onBLEScanClick" maxWidth="200"/>
+                        </VBox>
+                    </content>
+                </ScrollPane>
             </content>
         </Tab>
         <Tab text="New Experiment" closable="false">
