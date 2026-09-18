@@ -1,3 +1,36 @@
 .label {
     -fx-text-fill: blue;
 }
+
+.tab-pane {
+    -fx-tab-min-width: 120px;
+    -fx-tab-max-width: 200px;
+}
+
+.tab {
+    -fx-background-radius: 0;
+    -fx-background-color: -fx-background;
+}
+
+.tab:selected {
+    -fx-background-color: -fx-focus-color;
+}
+
+.scroll-pane {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+.scroll-pane > .viewport {
+    -fx-background-color: transparent;
+}
+
+.button {
+    -fx-pref-width: 200px;
+    -fx-padding: 8px 16px;
+}
+
+.text-field {
+    -fx-pref-width: 200px;
+    -fx-padding: 8px 16px;
+}

@@ -1,24 +1,57 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.layout.VBox?>
-
+<?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.layout.Pane?>
 <?import javafx.scene.control.TextField?>
-<VBox alignment="CENTER" spacing="20.0" xmlns:fx="http://javafx.com/fxml"
-      fx:controller="ant.gasmeter.Controller">
-    <padding>
-        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
-    </padding>
 
-    <Label fx:id="copyStatusLabel"/>
-    <Button text="copy" onAction="#onCopyButtonClick"/>
-    <Pane fx:id="chartPane" prefWidth="500" prefHeight="300"/>
-    <Button text="addpoint" onAction="#onDataClick"/>
-    <Button text="start bluetooth connection" onAction="#onBTClick"/>
-    <TextField fx:id="BTstatus" promptText="inactive" />
-    <Button text="close BT connection" onAction="#closeBT"/>
-    <Button text="Scan for BLE Devices" onAction="#onBLEScanClick"/>
-</VBox>
+<TabPane xmlns:fx="http://javafx.com/fxml" fx:controller="ant.gasmeter.Controller">
+    <tabs>
+        <Tab text="Overview">
+            <content>
+                <BorderPane>
+                    <center>
+                        <ScrollPane fitToWidth="true" fitToHeight="true">
+                            <content>
+                                <VBox alignment="CENTER" spacing="20.0">
+                                    <padding>
+                                        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
+                                    </padding>
+                                    <Label fx:id="copyStatusLabel"/>
+                                    <Button text="Copy" onAction="#onCopyButtonClick"/>
+                                    <Pane fx:id="chartPane" prefWidth="500" prefHeight="300"/>
+                                    <Button text="Add Point" onAction="#onDataClick"/>
+                                    <Button text="Start Bluetooth Connection" onAction="#onBTClick"/>
+                                    <TextField fx:id="BTstatus" promptText="inactive"/>
+                                    <Button text="Close BT Connection" onAction="#closeBT"/>
+                                    <Button text="Scan for BLE Devices" onAction="#onBLEScanClick"/>
+                                </VBox>
+                            </content>
+                        </ScrollPane>
+                    </center>
+                </BorderPane>
+            </content>
+        </Tab>
+        <Tab text="New Experiment" closable="false">
+            <content>
+                <ScrollPane fitToWidth="true" fitToHeight="true">
+                    <content>
+                        <VBox alignment="TOP_CENTER" spacing="20.0">
+                            <padding>
+                                <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
+                            </padding>
+                            <Label text="Create New Experiment" style="-fx-font-size: 18px; -fx-font-weight: bold;" />
+                            <Label text="Experiment configuration will go here" />
+                        </VBox>
+                    </content>
+                </ScrollPane>
+            </content>
+        </Tab>
+    </tabs>
+</TabPane>
