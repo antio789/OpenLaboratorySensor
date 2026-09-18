@@ -7,11 +7,6 @@
     -fx-tab-max-width: 200px;
 }
 
-.tab {
-    -fx-background-radius: 0;
-    -fx-background-color: -fx-background;
-}
-
 .tab:selected {
     -fx-background-color: -fx-focus-color;
 }
@@ -28,9 +23,15 @@
 .button {
     -fx-pref-width: 200px;
     -fx-padding: 8px 16px;
+    -fx-max-width: 200px;
 }
 
 .text-field {
     -fx-pref-width: 200px;
+    -fx-max-width: 200px;
     -fx-padding: 8px 16px;
+}
+
+.pane {
+    -fx-background-color: white;
 }
