@@ -11,15 +11,6 @@
     -fx-background-color: -fx-focus-color;
 }
 
-.scroll-pane {
-    -fx-background-color: transparent;
-    -fx-padding: 0;
-}
-
-.scroll-pane > .viewport {
-    -fx-background-color: transparent;
-}
-
 .button {
     -fx-pref-width: 200px;
     -fx-padding: 8px 16px;
