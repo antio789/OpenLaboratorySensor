@@ -55,9 +55,11 @@
                             <VBox spacing="10.0">
                                 <HBox spacing="10.0" alignment="CENTER_LEFT">
                                     <Label text="BT Device name:" />
-                                    <TextField fx:id="device_name" promptText="bluetooth device name" maxWidth="250" />
+                                    <TextField fx:id="device_name" promptText="bluetooth device name" maxWidth="200" />
+                                    <Label text="MAC Address:" />
+                                    <TextField fx:id="macField" promptText="MAC address" maxWidth="200" />
                                     <Label text="Sensor UUID:" />
-                                    <TextField fx:id="uuidField" promptText="UUID for sensor" maxWidth="250" />
+                                    <TextField fx:id="uuidField" promptText="UUID for sensor" maxWidth="200" />
                                     <Button text="Scan for device" onAction="#onBLEScanClick" maxWidth="150" />
                                 </HBox>
                             </VBox>
