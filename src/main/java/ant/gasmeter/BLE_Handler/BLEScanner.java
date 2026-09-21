@@ -23,7 +23,7 @@ public class BLEScanner {
     private BluetoothAdapter adapter;
     private record DeviceData(String name, String[] uuids, String mac) {}
 
-    public BLEScanner(TextField uuidField, TextField device_name, Map<String, String> BLEconnection) {
+    public BLEScanner(TextField uuidField, TextField device_name, TextField macField) {
         Map<String, DeviceData> deviceMap = new HashMap<>();
         ObservableList<String> deviceItems = FXCollections.observableArrayList();
         ListView<String> deviceListView = new ListView<>(deviceItems);
@@ -46,7 +46,7 @@ public class BLEScanner {
                 Platform.runLater(() ->  {
                     uuidField.setText(deviceMap.get(selectedDevice).uuids[0]);
                     device_name.setText(deviceMap.get(selectedDevice).name);
-                    BLEconnection.put("mac",deviceMap.get(selectedDevice).mac);
+                    macField.setText(deviceMap.get(selectedDevice).mac);
                 });
             }
             stage.close();

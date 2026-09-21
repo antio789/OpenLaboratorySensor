@@ -7,7 +7,6 @@ import ant.gasmeter.utils.Ref;
 import javafx.application.Platform;
 import javafx.collections.ListChangeListener;
 import javafx.concurrent.Task;
-import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
 import javafx.scene.chart.LineChart;
@@ -25,9 +24,8 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * TODO add a window to choose BTdevice if necessary
@@ -48,6 +46,35 @@ public class Controller {
     BLEReceiver BLE;
     Thread BluetoothManager;
 
+    @FXML
+    private TextField uuidField;
+    @FXML
+    private TextField device_name;
+    @FXML
+    private TextField macField;
+    @FXML
+    private ComboBox<Integer> sensorCountCombo;
+    @FXML
+    private VBox sensorFieldsContainer;
+
+    private List<TextField> lowerPinFields = new ArrayList<>();
+    private List<TextField> upperPinFields = new ArrayList<>();
+
+    public BLEConnectionConfig.BLEConnectionConfigData getBLEConnectionConfig() {
+        List<BLEConnectionConfig.SensorPins> pins = new ArrayList<>();
+        for (int i = 0; i < lowerPinFields.size(); i++) {
+            pins.add(new BLEConnectionConfig.SensorPins(
+                lowerPinFields.get(i).getText(),
+                upperPinFields.get(i).getText()
+            ));
+        }
+        return new BLEConnectionConfig.BLEConnectionConfigData(
+            macField.getText(),
+            uuidField.getText(),
+            device_name.getText(),
+            pins
+        );
+    }
 
     public void initialize(DataManagement data) {
         this.DATA = data;
@@ -59,11 +86,9 @@ public class Controller {
          */
     }
 
-
-
     @FXML
     protected void onCopyButtonClick() {
-        String result = DATA.copy_CSV();  // call your method
+        String result = DATA.copy_CSV();
 
         copyStatusLabel.setText(result);
         if (result.startsWith("Copied")) {
@@ -83,12 +108,10 @@ public class Controller {
         BLE.initializeBluetoothConnection(BTstatus);
     }
 
-
     @FXML
     public void closeBT(){
         BLE.closeConnection();
     }
-
 
     public void shutdown(){
         if (BLE != null) {
@@ -100,25 +123,19 @@ public class Controller {
     }
 
     @FXML
-    private TextField uuidField;
-    @FXML
-    private TextField device_name;
-    @FXML
-    Map<String, String> BLEconnection = new HashMap<>();
     public void onBLEScanClick() {
-        new BLEScanner(uuidField, device_name,BLEconnection);
+        new BLEScanner(uuidField, device_name, macField);
     }
 
     @FXML
-    private ComboBox<Integer> sensorCountCombo;
-    @FXML
-    private VBox sensorFieldsContainer;
     public void onSensorCountSelected() {
         Integer count = sensorCountCombo.getValue();
         if (count == null) return;
 
         Platform.runLater(() -> {
             sensorFieldsContainer.getChildren().clear();
+            lowerPinFields.clear();
+            upperPinFields.clear();
 
             Label headerSensor = new Label("Sensor Pins");
             headerSensor.setMaxWidth(120);
@@ -135,6 +152,7 @@ public class Controller {
             HBox headerBox = new HBox(10, headerSensor, headerLower, headerHigher, helpIcon);
             headerBox.setAlignment(Pos.CENTER_LEFT);
             sensorFieldsContainer.getChildren().add(headerBox);
+
             for (int i = 1; i <= count; i++) {
                 HBox sensorBox = new HBox(10);
                 sensorBox.setAlignment(Pos.CENTER_LEFT);
@@ -142,7 +160,6 @@ public class Controller {
                 Label sensorLabel = new Label("Sensor " + i + ":");
                 sensorLabel.setMaxWidth(120);
                 sensorLabel.setMinWidth(120);
-
 
                 TextField lowerField = new TextField();
                 lowerField.setPromptText("Lower sensor pin");
@@ -154,6 +171,9 @@ public class Controller {
 
                 sensorBox.getChildren().addAll(sensorLabel, lowerField, upperField);
                 sensorFieldsContainer.getChildren().add(sensorBox);
+
+                lowerPinFields.add(lowerField);
+                upperPinFields.add(upperField);
             }
         });
     }
@@ -171,7 +191,6 @@ public class Controller {
         XYChart.Series<Number, Number> series = new XYChart.Series<>();
         series.setName("Sensor Data");
 
-        //populateserie(series,data);
         lineChart.getData().add(series);
         chartPane.getChildren().add(lineChart);
 
