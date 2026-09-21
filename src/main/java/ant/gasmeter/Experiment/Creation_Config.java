@@ -80,4 +80,37 @@ public class Creation_Config {
                 pins
         );
     }
+
+    public static boolean validateFields(TextField macField, TextField uuidField, List<TextField> lowerPinFields, List<TextField> upperPinFields) {
+        boolean allValid = true;
+        
+        allValid = checkField(macField) && allValid;
+        allValid = checkField(uuidField) && allValid;
+        for (TextField field : lowerPinFields) {
+            allValid = checkField(field) && allValid;
+        }
+        for (TextField field : upperPinFields) {
+            allValid = checkField(field) && allValid;
+        }
+        
+        return allValid;
+    }
+
+    private static boolean checkField(TextField field) {
+        boolean valid = field.getText() != null && !field.getText().isEmpty();
+        field.setStyle(valid ? "" : "-fx-control-inner-background: #ffdddd; -fx-border-color: red;");
+        return valid;
+    }
+
+    public static void handleContinue(TextField macField, TextField uuidField, List<TextField> lowerPinFields, List<TextField> upperPinFields, Label validationLabel, Runnable onSuccess) {
+        boolean allValid = validateFields(macField, uuidField, lowerPinFields, upperPinFields);
+        if (allValid) {
+            validationLabel.setStyle("-fx-text-fill: green;");
+            validationLabel.setText("All fields valid!");
+            onSuccess.run();
+        } else {
+            validationLabel.setStyle("-fx-text-fill: red;");
+            validationLabel.setText("Please fill all required fields!");
+        }
+    }
 }

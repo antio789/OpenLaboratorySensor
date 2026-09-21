@@ -77,6 +77,8 @@
                                 </ComboBox>
                             </VBox>
                             <VBox fx:id="sensorFieldsContainer" spacing="10.0"/>
+                            <Button text="Continue" onAction="#onContinueClick" maxWidth="200"/>
+                            <Label fx:id="validationLabel"/>
 
                         </VBox>
                     </content>
