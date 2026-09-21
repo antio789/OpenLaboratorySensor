@@ -105,6 +105,10 @@ public class Controller {
         Creation_Config.Setup_Pins(sensorCountCombo,sensorFieldsContainer,lowerPinFields,upperPinFields);
     }
 
+    public Creation_Config.BLEConnectionConfigData getBLEConnectionConfig() {
+        return BLEConnectionConfig.getConfig(lowerPinFields, upperPinFields, macField, uuidField);
+    }
+
     public TextField getBTstatus() {
         return BTstatus;
     }
