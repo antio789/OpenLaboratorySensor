@@ -53,9 +53,8 @@
                                 <TextField fx:id="experimentNameField" promptText="Enter experiment name" maxWidth="300" />
                             </VBox>
                             <VBox spacing="10.0">
+                                <Label text="Bluetooth Device: Please scan and select a device or write manually" />
                                 <HBox spacing="10.0" alignment="CENTER_LEFT">
-                                    <Label text="BT Device name:" />
-                                    <TextField fx:id="device_name" promptText="bluetooth device name" maxWidth="200" />
                                     <Label text="MAC Address:" />
                                     <TextField fx:id="macField" promptText="MAC address" maxWidth="200" />
                                     <Label text="Sensor UUID:" />

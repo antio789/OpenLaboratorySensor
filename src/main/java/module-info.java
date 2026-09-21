@@ -17,4 +17,6 @@ module ant.gasmeter {
     opens ant.gasmeter.BLE_Handler to javafx.fxml;
     exports ant.gasmeter.utils;
     opens ant.gasmeter.utils to javafx.fxml;
+    exports ant.gasmeter.Experiment;
+    opens ant.gasmeter.Experiment to javafx.fxml;
 }

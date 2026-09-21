@@ -17,13 +17,16 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class BLEScanner {
     private BluetoothAdapter adapter;
-    private record DeviceData(String name, String[] uuids, String mac) {}
+    private record DeviceData(String[] uuids, String mac) {}
 
-    public BLEScanner(TextField uuidField, TextField device_name, TextField macField) {
+    public BLEScanner(TextField uuidField, TextField macField) {
         Map<String, DeviceData> deviceMap = new HashMap<>();
         ObservableList<String> deviceItems = FXCollections.observableArrayList();
         ListView<String> deviceListView = new ListView<>(deviceItems);
@@ -45,7 +48,6 @@ public class BLEScanner {
             if (selectedDevice != null){
                 Platform.runLater(() ->  {
                     uuidField.setText(deviceMap.get(selectedDevice).uuids[0]);
-                    device_name.setText(deviceMap.get(selectedDevice).name);
                     macField.setText(deviceMap.get(selectedDevice).mac);
                 });
             }
@@ -73,7 +75,7 @@ public class BLEScanner {
                                     String deviceDisplay = device.getName() + " : " + Arrays.toString(device.getUuids());
                                     if (!deviceItems.contains(deviceDisplay)) {
                                         deviceItems.add(deviceDisplay);
-                                        deviceMap.put(deviceDisplay, new DeviceData(device.getName(), device.getUuids().clone(), device.getAddress()));
+                                        deviceMap.put(deviceDisplay, new DeviceData(device.getUuids().clone(), device.getAddress()));
                                     }
                                 }
                             });
