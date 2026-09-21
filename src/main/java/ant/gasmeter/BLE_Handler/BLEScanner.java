@@ -21,9 +21,9 @@ import java.util.*;
 
 public class BLEScanner {
     private BluetoothAdapter adapter;
-    private record DeviceData(String name, String[] uuids) {} //might as well store the entire copy of the item.
+    private record DeviceData(String name, String[] uuids, String mac) {}
 
-    public BLEScanner(TextField uuidField, TextField device_name) {
+    public BLEScanner(TextField uuidField, TextField device_name, Map<String, String> BLEconnection) {
         Map<String, DeviceData> deviceMap = new HashMap<>();
         ObservableList<String> deviceItems = FXCollections.observableArrayList();
         ListView<String> deviceListView = new ListView<>(deviceItems);
@@ -43,7 +43,11 @@ public class BLEScanner {
         selectButton.setOnAction(_ -> {
             String selectedDevice = deviceListView.getSelectionModel().getSelectedItem();
             if (selectedDevice != null){
-                Platform.runLater(() ->  {uuidField.setText(deviceMap.get(selectedDevice).uuids[0]);device_name.setText(deviceMap.get(selectedDevice).name);});
+                Platform.runLater(() ->  {
+                    uuidField.setText(deviceMap.get(selectedDevice).uuids[0]);
+                    device_name.setText(deviceMap.get(selectedDevice).name);
+                    BLEconnection.put("mac",deviceMap.get(selectedDevice).mac);
+                });
             }
             stage.close();
         });
@@ -69,7 +73,7 @@ public class BLEScanner {
                                     String deviceDisplay = device.getName() + " : " + Arrays.toString(device.getUuids());
                                     if (!deviceItems.contains(deviceDisplay)) {
                                         deviceItems.add(deviceDisplay);
-                                        deviceMap.put(deviceDisplay, new DeviceData(device.getName(), device.getUuids().clone()));
+                                        deviceMap.put(deviceDisplay, new DeviceData(device.getName(), device.getUuids().clone(), device.getAddress()));
                                     }
                                 }
                             });

@@ -25,7 +25,10 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
 /**
  * TODO add a window to choose BTdevice if necessary
  * TODO add a window to choose BLEHost
@@ -101,8 +104,9 @@ public class Controller {
     @FXML
     private TextField device_name;
     @FXML
+    Map<String, String> BLEconnection = new HashMap<>();
     public void onBLEScanClick() {
-        new BLEScanner(uuidField, device_name);
+        new BLEScanner(uuidField, device_name,BLEconnection);
     }
 
     @FXML
