@@ -30,6 +30,8 @@ public class Controller {
     @FXML
     private Label copyStatusLabel;
     @FXML
+    private Label validationLabel;
+    @FXML
     private TextField BTstatus;
 
     BLEReceiver BLE;
@@ -98,6 +100,12 @@ public class Controller {
     @FXML
     public void onBLEScanClick() {
         new BLEScanner(uuidField, macField);
+    }
+
+    @FXML
+    public void onContinueClick() {
+        Creation_Config.handleContinue(macField, uuidField, lowerPinFields, upperPinFields, validationLabel, () -> {
+        });
     }
 
     @FXML
