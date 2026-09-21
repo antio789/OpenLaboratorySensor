@@ -10,17 +10,22 @@ import javafx.stage.Stage;
 import java.io.IOException;
 
 /**
+ * TODO: new experiment tab: when created -> push to own tab
  * TODO add a warning when closing the application
  * TODO add option to open from file
  * TODO add multiple inputsource support
  * TODO add support for USB arduino
  * TODO add support for direct rPI direct input
+ *
+ *
  */
 public class Application extends javafx.application.Application {
     DataManagement DATA;
     Controller controller;
     BLEReceiver BLE;
     @Override
+
+    //
     public void start(Stage stage) throws IOException {
         DATA = new DataManagement();
         BLE = new BLEReceiver(DATA);

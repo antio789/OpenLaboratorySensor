@@ -21,13 +21,9 @@ import java.util.*;
 
 public class BLEScanner {
     private BluetoothAdapter adapter;
-    record DeviceData(String name, String[] uuids) {}
+    private record DeviceData(String name, String[] uuids) {} //might as well store the entire copy of the item.
 
-    //TODO: show different devices and propose to select instead of dumping everything
-    public BLEScanner() {
-    }
-
-    public void scanForDevices(TextField statusField) {
+    public BLEScanner(TextField uuidField, TextField device_name) {
         Map<String, DeviceData> deviceMap = new HashMap<>();
         ObservableList<String> deviceItems = FXCollections.observableArrayList();
         ListView<String> deviceListView = new ListView<>(deviceItems);
@@ -47,7 +43,7 @@ public class BLEScanner {
         selectButton.setOnAction(_ -> {
             String selectedDevice = deviceListView.getSelectionModel().getSelectedItem();
             if (selectedDevice != null){
-                exportData(deviceMap.get(selectedDevice));
+                Platform.runLater(() ->  {uuidField.setText(deviceMap.get(selectedDevice).uuids[0]);device_name.setText(deviceMap.get(selectedDevice).name);});
             }
             stage.close();
         });
@@ -55,7 +51,6 @@ public class BLEScanner {
             @Override
             protected Void call() {
                 try {
-                    this.updateMessage("Initializing BLE scan...");
                     DeviceManager deviceManager = DeviceManager.createInstance(false);
                     adapter = deviceManager.getAdapters().getFirst();
                     deviceManager.setDefaultAdapter(adapter);
@@ -65,7 +60,6 @@ public class BLEScanner {
                         Thread.sleep(1000);
                     }
                     adapter.startDiscovery();
-                    this.updateMessage("Scanning for BLE devices...");
                     while (!isCancelled()) {
                         List<BluetoothDevice> discovered = deviceManager.getDevices(false);
                         List<BluetoothDevice> scanning = discovered.stream().filter(dev -> dev.getName() != null && dev.getUuids() != null && dev.getUuids().length > 0).toList();
@@ -82,7 +76,6 @@ public class BLEScanner {
                         }
                     }
                 } catch (Exception e) {
-                    this.updateMessage("Scan failed: " + e.getMessage());
                     e.printStackTrace();
                 }
                 return null;
@@ -100,14 +93,9 @@ public class BLEScanner {
             scanTask.cancel();
             stage.close();
         });
-        statusField.textProperty().bind(scanTask.messageProperty());
 
         Thread thread = new Thread(scanTask);
         thread.setDaemon(true);
         thread.start();
-    }
-
-    private void exportData(DeviceData data){
-
     }
 }

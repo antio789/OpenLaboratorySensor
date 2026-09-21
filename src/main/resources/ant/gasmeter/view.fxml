@@ -10,6 +10,13 @@
 <?import javafx.scene.layout.Pane?>
 <?import javafx.scene.control.TextField?>
 
+<?import javafx.scene.layout.HBox?>
+<?import javafx.collections.FXCollections?>
+<?import javafx.scene.control.ComboBox?>
+<?import java.lang.String?>
+
+
+<?import java.lang.Integer?>
 <TabPane xmlns:fx="http://javafx.com/fxml" fx:controller="ant.gasmeter.Controller">
     <tabs>
         <Tab text="Overview">
@@ -25,9 +32,9 @@
                             <Pane fx:id="chartPane" prefWidth="500" prefHeight="300" minWidth="500" minHeight="300"/>
                             <Button text="Add Point" onAction="#onDataClick" maxWidth="200"/>
                             <Button text="Start Bluetooth Connection" onAction="#onBTClick" maxWidth="200"/>
-                            <TextField fx:id="BTstatus" promptText="inactive" maxWidth="200"/>
+                            <TextField fx:id="BTstatus" promptText="inactive" maxWidth="800"/>
                             <Button text="Close BT Connection" onAction="#closeBT" maxWidth="200"/>
-                            <Button text="Scan for BLE Devices" onAction="#onBLEScanClick" maxWidth="200"/>
+
                         </VBox>
                     </content>
                 </ScrollPane>
@@ -37,12 +44,39 @@
             <content>
                 <ScrollPane fitToWidth="true" fitToHeight="true">
                     <content>
-                        <VBox alignment="TOP_CENTER" spacing="20.0">
+                        <VBox alignment="TOP_RIGHT" spacing="20.0">
                             <padding>
                                 <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
                             </padding>
-                            <Label text="Create New Experiment" style="-fx-font-size: 18px; -fx-font-weight: bold;" />
-                            <Label text="Experiment configuration will go here" />
+                            <VBox spacing="10.0">
+                                <Label text="Experiment Name:" />
+                                <TextField fx:id="experimentNameField" promptText="Enter experiment name" maxWidth="300" />
+                            </VBox>
+                            <VBox spacing="10.0">
+                                <HBox spacing="10.0" alignment="CENTER_LEFT">
+                                    <Label text="BT Device name:" />
+                                    <TextField fx:id="device_name" promptText="bluetooth device name" maxWidth="250" />
+                                    <Label text="Sensor UUID:" />
+                                    <TextField fx:id="uuidField" promptText="UUID for sensor" maxWidth="250" />
+                                    <Button text="Scan for device" onAction="#onBLEScanClick" maxWidth="150" />
+                                </HBox>
+                            </VBox>
+                            <VBox spacing="10.0">
+                                <Label text="Number of Sensors:" />
+                                <ComboBox fx:id="sensorCountCombo" onAction="#onSensorCountSelected" maxWidth="100">
+                                    <items>
+                                        <FXCollections fx:factory="observableArrayList">
+                                            <Integer fx:value="1" />
+                                            <Integer fx:value="2" />
+                                            <Integer fx:value="3" />
+                                            <Integer fx:value="4" />
+                                            <Integer fx:value="5" />
+                                        </FXCollections>
+                                    </items>
+                                </ComboBox>
+                            </VBox>
+                            <VBox fx:id="sensorFieldsContainer" spacing="10.0"/>
+
                         </VBox>
                     </content>
                 </ScrollPane>

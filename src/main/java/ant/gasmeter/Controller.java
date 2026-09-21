@@ -7,13 +7,19 @@ import ant.gasmeter.utils.Ref;
 import javafx.application.Platform;
 import javafx.collections.ListChangeListener;
 import javafx.concurrent.Task;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.geometry.Pos;
 import javafx.scene.chart.LineChart;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+import javafx.scene.control.Tooltip;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.VBox;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -27,6 +33,8 @@ import java.util.List;
  * **/
 public class Controller {
     public Pane chartPane;
+    public TextField experimentNameField;
+
     private DataManagement DATA;
     private LineChart<Number, Number> lineChart;
     @FXML
@@ -35,7 +43,6 @@ public class Controller {
     private TextField BTstatus;
 
     BLEReceiver BLE;
-    BLEScanner BLEScanner;
     Thread BluetoothManager;
 
 
@@ -43,11 +50,108 @@ public class Controller {
         this.DATA = data;
         setupChart(data);
         BLE = new BLEReceiver(DATA);
-        BLEScanner = new BLEScanner();
         /*this.DATA.points.addListener((ListChangeListener<DataPoint>) _ -> {
             refreshChart();
         });
          */
+    }
+
+
+
+    @FXML
+    protected void onCopyButtonClick() {
+        String result = DATA.copy_CSV();  // call your method
+
+        copyStatusLabel.setText(result);
+        if (result.startsWith("Copied")) {
+            copyStatusLabel.setStyle("-fx-text-fill: green;");
+        } else {
+            copyStatusLabel.setStyle("-fx-text-fill: red;");
+        }
+    }
+
+    @FXML
+    public void onDataClick() {
+        DATA.writeStateToCSV("true");
+    }
+
+    @FXML
+    public void onBTClick(){
+        BLE.initializeBluetoothConnection(BTstatus);
+    }
+
+
+    @FXML
+    public void closeBT(){
+        BLE.closeConnection();
+    }
+
+
+    public void shutdown(){
+        if (BLE != null) {
+            BLE.closeConnection();
+        }
+        if (BluetoothManager != null && BluetoothManager.isAlive()) {
+            BluetoothManager.interrupt();
+        }
+    }
+
+    @FXML
+    private TextField uuidField;
+    @FXML
+    private TextField device_name;
+    @FXML
+    public void onBLEScanClick() {
+        new BLEScanner(uuidField, device_name);
+    }
+
+    @FXML
+    private ComboBox<Integer> sensorCountCombo;
+    @FXML
+    private VBox sensorFieldsContainer;
+    public void onSensorCountSelected() {
+        Integer count = sensorCountCombo.getValue();
+        if (count == null) return;
+
+        Platform.runLater(() -> {
+            sensorFieldsContainer.getChildren().clear();
+
+            Label headerSensor = new Label("Sensor Pins");
+            headerSensor.setMaxWidth(120);
+            headerSensor.setMinWidth(120);
+            Label headerLower = new Label("Lower");
+            headerLower.setMinWidth(130);
+            Label headerHigher = new Label("Higher");
+            headerHigher.setMinWidth(130);
+
+            Label helpIcon = new Label("?");
+            helpIcon.setStyle("-fx-background-radius: 50%; -fx-background-color: lightblue; -fx-padding: 5px; -fx-font-size: 14; -fx-min-width: 24px; -fx-min-height: 24px; -fx-alignment: CENTER;");
+            helpIcon.setTooltip(new Tooltip("Please select the pins based on the numbering on the board \n Make sure to Correctly identify which pin is for the lower or higher sensor on the Gas Meter"));
+
+            HBox headerBox = new HBox(10, headerSensor, headerLower, headerHigher, helpIcon);
+            headerBox.setAlignment(Pos.CENTER_LEFT);
+            sensorFieldsContainer.getChildren().add(headerBox);
+            for (int i = 1; i <= count; i++) {
+                HBox sensorBox = new HBox(10);
+                sensorBox.setAlignment(Pos.CENTER_LEFT);
+
+                Label sensorLabel = new Label("Sensor " + i + ":");
+                sensorLabel.setMaxWidth(120);
+                sensorLabel.setMinWidth(120);
+
+
+                TextField lowerField = new TextField();
+                lowerField.setPromptText("Lower sensor pin");
+                lowerField.setMaxWidth(130);
+
+                TextField upperField = new TextField();
+                upperField.setPromptText("Upper sensor pin");
+                upperField.setMaxWidth(130);
+
+                sensorBox.getChildren().addAll(sensorLabel, lowerField, upperField);
+                sensorFieldsContainer.getChildren().add(sensorBox);
+            }
+        });
     }
 
     public void setupChart(DataManagement data) {
@@ -77,51 +181,10 @@ public class Controller {
                             double days = duration.toDays();
                             series.getData().add(new XYChart.Data<>(days,point.value()));
                         }
-                        });
+                    });
                 }
             }
         });
-    }
-
-    @FXML
-    protected void onCopyButtonClick() {
-        String result = DATA.copy_CSV();  // call your method
-
-        copyStatusLabel.setText(result);
-        if (result.startsWith("Copied")) {
-            copyStatusLabel.setStyle("-fx-text-fill: green;");
-        } else {
-            copyStatusLabel.setStyle("-fx-text-fill: red;");
-        }
-    }
-
-    @FXML
-    public void onDataClick() {
-        DATA.writeStateToCSV("true");
-    }
-
-    @FXML
-    public void onBTClick(){
-        BLE.initializeBluetoothConnection(BTstatus);
-    }
-
-    @FXML
-    public void onBLEScanClick() {
-        BLEScanner.scanForDevices(BTstatus);
-    }
-
-    @FXML
-    public void closeBT(){
-        BLE.closeConnection();
-    }
-
-    public void shutdown(){
-        if (BLE != null) {
-            BLE.closeConnection();
-        }
-        if (BluetoothManager != null && BluetoothManager.isAlive()) {
-            BluetoothManager.interrupt();
-        }
     }
 
     private void refreshChart(){
@@ -172,4 +235,5 @@ public class Controller {
     public void updateBTstatus(String text) {
         Platform.runLater(()-> BTstatus.setText(text));
     }
+
 }
