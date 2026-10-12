@@ -1,7 +1,5 @@
-package ant.gasmeter;
+package ant.gasmeter.utils;
 
-import ant.gasmeter.utils.DataPoint;
-import ant.gasmeter.utils.Ref;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -17,6 +15,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
+//TODO: rework for it to be able to take a csv file and be created multiple times.
 public class DataManagement {
     private final Path CSV;
     public final LocalDateTime BaseTime;

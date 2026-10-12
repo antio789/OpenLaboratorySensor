@@ -1,22 +1,28 @@
 package ant.gasmeter;
 
 import ant.gasmeter.BLE_Handler.BLEReceiver;
+import ant.gasmeter.utils.DataManagement;
+import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
+import javafx.scene.control.TabPane;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 
 import java.io.IOException;
 
 /**
+ * TODO: splitt tabs into own pages with own controller.
+ *
  * TODO: new experiment tab: when created -> push to own tab
  * TODO add a warning when closing the application
  * TODO add option to open from file
- * TODO add multiple inputsource support
+ * TODO add multiple input source support
  * TODO add support for USB arduino
  * TODO add support for direct rPI direct input
- *
+ * TODO add proper logger
+ * TODO push code to arduino if possible
  *
  */
 public class Application extends javafx.application.Application {
@@ -36,6 +42,8 @@ public class Application extends javafx.application.Application {
         double height = screenBounds.getHeight() * 0.5;
         Scene scene = new Scene(fxmlLoader.load(), width, height);
         controller = fxmlLoader.getController();
+        ApplicationState.getInstance().setData(DATA);
+
         controller.initialize(DATA);
 
         scene.getStylesheets().add(getClass().getResource("Styles.css").toExternalForm());
@@ -43,6 +51,9 @@ public class Application extends javafx.application.Application {
         stage.setScene(scene);
         stage.show();
     }
+
+
+
 
     @Override
     public void stop() throws Exception {

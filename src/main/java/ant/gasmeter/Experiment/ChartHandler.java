@@ -1,6 +1,8 @@
-package ant.gasmeter.utils;
+package ant.gasmeter.Experiment;
 
-import ant.gasmeter.DataManagement;
+import ant.gasmeter.utils.DataManagement;
+import ant.gasmeter.utils.DataPoint;
+import ant.gasmeter.utils.Ref;
 import javafx.application.Platform;
 import javafx.collections.ListChangeListener;
 import javafx.concurrent.Task;

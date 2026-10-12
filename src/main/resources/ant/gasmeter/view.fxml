@@ -17,73 +17,65 @@
 
 
 <?import java.lang.Integer?>
-<TabPane xmlns:fx="http://javafx.com/fxml" fx:controller="ant.gasmeter.Controller">
+<TabPane xmlns:fx="http://javafx.com/fxml" fx:controller="ant.gasmeter.Controller" fx:id="tabPane">
     <tabs>
         <Tab text="Overview">
             <content>
                 <ScrollPane fitToWidth="true" fitToHeight="true">
-                    <content>
-                        <VBox spacing="20.0">
-                            <padding>
-                                <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
-                            </padding>
-                            <Label fx:id="copyStatusLabel"/>
-                            <Button text="Copy" onAction="#onCopyButtonClick" maxWidth="200"/>
-                            <Pane fx:id="chartPane" prefWidth="500" prefHeight="300" minWidth="500" minHeight="300"/>
-                            <Button text="Add Point" onAction="#onDataClick" maxWidth="200"/>
-                            <Button text="Start Bluetooth Connection" onAction="#onBTClick" maxWidth="200"/>
-                            <TextField fx:id="BTstatus" promptText="inactive" maxWidth="800"/>
-                            <Button text="Close BT Connection" onAction="#closeBT" maxWidth="200"/>
+                    <VBox spacing="20.0">
+                        <padding>
+                            <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
+                        </padding>
+                        <Label fx:id="copyStatusLabel"/>
+                        <Button text="Copy" onAction="#onCopyButtonClick" maxWidth="200"/>
+                        <Pane fx:id="chartPane" prefWidth="500" prefHeight="300" minWidth="500" minHeight="300"/>
+                        <Button text="Add Point" onAction="#onDataClick" maxWidth="200"/>
+                        <Button text="Start Bluetooth Connection" onAction="#onBTClick" maxWidth="200"/>
+                        <TextField fx:id="BTstatus" promptText="inactive" maxWidth="800"/>
+                        <Button text="Close BT Connection" onAction="#closeBT" maxWidth="200"/>
 
-                        </VBox>
-                    </content>
+                    </VBox>
                 </ScrollPane>
             </content>
         </Tab>
         <Tab text="New Experiment" closable="false">
-            <content>
-                <ScrollPane fitToWidth="true" fitToHeight="true">
-                    <content>
-                        <VBox alignment="TOP_RIGHT" spacing="20.0">
-                            <padding>
-                                <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
-                            </padding>
-                            <VBox spacing="10.0">
-                                <Label text="Experiment Name:" />
-                                <TextField fx:id="experimentNameField" promptText="Enter experiment name" maxWidth="300" />
-                            </VBox>
-                            <VBox spacing="10.0">
-                                <Label text="Bluetooth Device: Please scan and select a device or write manually" />
-                                <HBox spacing="10.0" alignment="CENTER_LEFT">
-                                    <Label text="MAC Address:" />
-                                    <TextField fx:id="macField" promptText="MAC address" maxWidth="200" />
-                                    <Label text="Sensor UUID:" />
-                                    <TextField fx:id="uuidField" promptText="UUID for sensor" maxWidth="200" />
-                                    <Button text="Scan for device" onAction="#onBLEScanClick" maxWidth="150" />
-                                </HBox>
-                            </VBox>
-                            <VBox spacing="10.0">
-                                <Label text="Number of Sensors:" />
-                                <ComboBox fx:id="sensorCountCombo" onAction="#onSensorCountSelected" maxWidth="100">
-                                    <items>
-                                        <FXCollections fx:factory="observableArrayList">
-                                            <Integer fx:value="1" />
-                                            <Integer fx:value="2" />
-                                            <Integer fx:value="3" />
-                                            <Integer fx:value="4" />
-                                            <Integer fx:value="5" />
-                                        </FXCollections>
-                                    </items>
-                                </ComboBox>
-                            </VBox>
-                            <VBox fx:id="sensorFieldsContainer" spacing="10.0"/>
-                            <Button text="Continue" onAction="#onContinueClick" maxWidth="200"/>
-                            <Label fx:id="validationLabel"/>
+            <ScrollPane fitToWidth="true" fitToHeight="true">
+                <VBox spacing="20.0">
+                    <padding>
+                        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
+                    </padding>
+                    <VBox spacing="10.0">
+                        <Label text="Experiment Name:"/>
+                        <TextField fx:id="experimentNameField" promptText="Enter experiment name" maxWidth="300"/>
+                    </VBox>
+                    <VBox spacing="10.0">
+                        <Label text="Bluetooth Device: Please scan and select a device or write manually"/>
+                        <HBox spacing="10.0" alignment="CENTER_LEFT">
+                            <Label text="MAC Address:"/>
+                            <TextField fx:id="macField" promptText="MAC address" maxWidth="200"/>
+                            <Button text="Scan for device" onAction="#onBLEScanClick" maxWidth="150"/>
+                        </HBox>
+                    </VBox>
+                    <VBox spacing="10.0">
+                        <Label text="Number of Sensors:"/>
+                        <ComboBox fx:id="sensorCountCombo" onAction="#onSensorCountSelected" maxWidth="100">
+                            <items>
+                                <FXCollections fx:factory="observableArrayList">
+                                    <Integer fx:value="1"/>
+                                    <Integer fx:value="2"/>
+                                    <Integer fx:value="3"/>
+                                    <Integer fx:value="4"/>
+                                    <Integer fx:value="5"/>
+                                </FXCollections>
+                            </items>
+                        </ComboBox>
+                    </VBox>
+                    <VBox fx:id="sensorFieldsContainer" spacing="10.0"/>
+                    <Button text="Continue" onAction="#onContinueClick" maxWidth="200"/>
+                    <Label fx:id="validationLabel"/>
 
-                        </VBox>
-                    </content>
-                </ScrollPane>
-            </content>
+                </VBox>
+            </ScrollPane>
         </Tab>
     </tabs>
 </TabPane>

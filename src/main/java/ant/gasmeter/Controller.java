@@ -2,23 +2,24 @@ package ant.gasmeter;
 
 import ant.gasmeter.BLE_Handler.BLEReceiver;
 import ant.gasmeter.BLE_Handler.BLEScanner;
-import ant.gasmeter.Experiment.Creation_Config;
-import ant.gasmeter.utils.ChartHandler;
+import ant.gasmeter.Experiment.TabControl;
+import ant.gasmeter.Experiment.ChartHandler;
+import ant.gasmeter.utils.DataManagement;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.geometry.Pos;
 import javafx.scene.chart.LineChart;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * TODO add a window to choose BTdevice if necessary
- * TODO add a window to choose BLEHost
  *
  * **/
 public class Controller {
@@ -33,12 +34,11 @@ public class Controller {
     private Label validationLabel;
     @FXML
     private TextField BTstatus;
+    @FXML
+    private TabPane tabPane;
 
-    BLEReceiver BLE;
     Thread BluetoothManager;
 
-    @FXML
-    private TextField uuidField;
     @FXML
     private TextField macField;
     @FXML
@@ -46,19 +46,19 @@ public class Controller {
     @FXML
     private VBox sensorFieldsContainer;
 
-    private List<TextField> lowerPinFields = new ArrayList<>();
-    private List<TextField> upperPinFields = new ArrayList<>();
+    private final List<TextField> lowerPinFields = new ArrayList<>();
+    private final List<TextField> upperPinFields = new ArrayList<>();
 
-
+    ApplicationState App_state;
 
     public void initialize(DataManagement data) {
         this.DATA = data;
         ChartHandler.setupChart(data,lineChart,chartPane);
-        BLE = new BLEReceiver(DATA);
         /*this.DATA.points.addListener((ListChangeListener<DataPoint>) _ -> {
             refreshChart();
         });
          */
+        App_state = ApplicationState.getInstance();
     }
 
     @FXML
@@ -80,17 +80,19 @@ public class Controller {
 
     @FXML
     public void onBTClick(){
-        BLE.initializeBluetoothConnection(BTstatus);
+        //BLE.initializeBluetoothConnection(BTstatus);
     }
-
-    @FXML
+    private final List<BLEReceiver> BLE_Connections = new ArrayList<>();
+    @FXML //TODO: this needs to be attached to every specific experiment.
     public void closeBT(){
-        BLE.closeConnection();
+        //ble.closeConnection();
     }
 
     public void shutdown(){
-        if (BLE != null) {
-            BLE.closeConnection();
+        for (BLEReceiver ble : BLE_Connections) {
+            if (ble != null) {
+                ble.closeConnection();
+            }
         }
         if (BluetoothManager != null && BluetoothManager.isAlive()) {
             BluetoothManager.interrupt();
@@ -99,18 +101,111 @@ public class Controller {
 
     @FXML
     public void onBLEScanClick() {
-        new BLEScanner(uuidField, macField);
+        new BLEScanner(macField);
     }
 
     @FXML
-    public void onContinueClick() {
-        Creation_Config.handleContinue(macField, uuidField, lowerPinFields, upperPinFields, validationLabel, () -> {
-        });
+    public void onContinueClick() throws IOException {
+        String experiment_name = experimentNameField.getText();
+        ApplicationState.getInstance().setValidationData(new ApplicationState.TabValidation(macField, lowerPinFields, upperPinFields, validationLabel));
+        if (handleContinue(experiment_name)){
+            FXMLLoader loader = new FXMLLoader(Application.class.getResource("Experiment.fxml"));
+            loader.load();
+            Tab newTab = new Tab();
+            newTab.setText(experiment_name);
+            TabControl experimentcontroller = loader.getController();
+            ApplicationState state = ApplicationState.getInstance();
+            experimentcontroller.initialise(state.getTabData(experiment_name));
+            tabPane.getTabs().add(newTab);
+        }
+    }
+
+    public static boolean handleContinue(String tabname) {
+        ApplicationState state = ApplicationState.getInstance();
+        ApplicationState.TabValidation tabValidation = state.getValidationData();
+
+        boolean allValid = validateFields(tabValidation.macField(), tabValidation.lowerPinFields(), tabValidation.upperPinFields());
+        if (allValid) {
+            if(!state.setTabData(tabname, new ApplicationState.TabData(tabValidation.macField().getText(), tabValidation.lowerPinFields().stream().map(TextField::getText).toList(),
+                    tabValidation.upperPinFields().stream().map(TextField::getText).toList()))){
+                tabValidation.validationLabel().setStyle("-fx-text-fill: red;");
+                tabValidation.validationLabel().setText("Experiment name already in use please use another one");
+            }else {
+                tabValidation.validationLabel().setStyle("-fx-text-fill: green;");
+                tabValidation.validationLabel().setText("All fields valid!");
+                return true;
+            }
+        } else{
+            tabValidation.validationLabel().setStyle("-fx-text-fill: red;");
+            tabValidation.validationLabel().setText("Please fill all required fields!");
+        }
+        return false;
+    }
+
+    public static boolean validateFields(TextField macField, List<TextField> lowerPinFields, List<TextField> upperPinFields) {
+        boolean allValid;
+
+        allValid = checkField(macField);
+        for (TextField field : lowerPinFields) allValid = checkField(field) && allValid;
+        for (TextField field : upperPinFields) allValid = checkField(field) && allValid;
+        return allValid;
+    }
+
+    private static boolean checkField(TextField field) {
+        boolean valid = field.getText() != null && !field.getText().isEmpty();
+        field.setStyle(valid ? "" : "-fx-control-inner-background: #ffdddd; -fx-border-color: red;");
+        return valid;
     }
 
     @FXML
     public void onSensorCountSelected() {
-        Creation_Config.Setup_Pins(sensorCountCombo,sensorFieldsContainer,lowerPinFields,upperPinFields);
+        Integer count = sensorCountCombo.getValue();
+        if (count == null) return;
+
+        Platform.runLater(() -> {
+            sensorFieldsContainer.getChildren().clear();
+            lowerPinFields.clear();
+            upperPinFields.clear();
+
+            Label headerSensor = new Label("Sensor Pins");
+            headerSensor.setMaxWidth(120);
+            headerSensor.setMinWidth(120);
+            Label headerLower = new Label("Lower");
+            headerLower.setMinWidth(130);
+            Label headerHigher = new Label("Higher");
+            headerHigher.setMinWidth(130);
+
+            Label helpIcon = new Label("?");
+            helpIcon.setStyle("-fx-background-radius: 50%; -fx-background-color: lightblue; -fx-padding: 5px; -fx-font-size: 14; -fx-min-width: 24px; -fx-min-height: 24px; -fx-alignment: CENTER;");
+            helpIcon.setTooltip(new Tooltip("Please select the pins based on the numbering on the board \n Make sure to Correctly identify which pin is for the lower or higher sensor on the Gas Meter"));
+
+            HBox headerBox = new HBox(10, headerSensor, headerLower, headerHigher, helpIcon);
+            headerBox.setAlignment(Pos.CENTER_LEFT);
+            sensorFieldsContainer.getChildren().add(headerBox);
+
+            for (int i = 1; i <= count; i++) {
+                HBox sensorBox = new HBox(10);
+                sensorBox.setAlignment(Pos.CENTER_LEFT);
+
+                Label sensorLabel = new Label("Sensor " + i + ":");
+                sensorLabel.setMaxWidth(120);
+                sensorLabel.setMinWidth(120);
+
+                TextField lowerField = new TextField();
+                lowerField.setPromptText("Lower sensor pin");
+                lowerField.setMaxWidth(130);
+
+                TextField upperField = new TextField();
+                upperField.setPromptText("Upper sensor pin");
+                upperField.setMaxWidth(130);
+
+                sensorBox.getChildren().addAll(sensorLabel, lowerField, upperField);
+                sensorFieldsContainer.getChildren().add(sensorBox);
+
+                lowerPinFields.add(lowerField);
+                upperPinFields.add(upperField);
+            }
+        });
     }
 
     public TextField getBTstatus() {
