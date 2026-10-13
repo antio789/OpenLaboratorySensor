@@ -17,15 +17,16 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+//TODO: make it work with multiple lines at the same time, and support more than one experiment as it still uses datamanagement
 public class ChartHandler {
 
-    public static void setupChart(DataManagement data, LineChart<Number, Number> lineChart, Pane chartPane) {
+    public static void setupChart(DataManagement data, Pane chartPane) {
         NumberAxis xAxis = new NumberAxis();
         xAxis.setLabel("Days");
         NumberAxis yAxis = new NumberAxis();
         yAxis.setLabel("Gas Flow");
 
-        lineChart = new LineChart<>(xAxis, yAxis);
+        LineChart<Number, Number> lineChart = new LineChart<>(xAxis, yAxis);
         lineChart.setTitle("Live Gas Flow Chart");
         lineChart.setPrefSize(500, 300);
 

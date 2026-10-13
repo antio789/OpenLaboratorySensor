@@ -53,7 +53,7 @@ public class Controller {
 
     public void initialize(DataManagement data) {
         this.DATA = data;
-        ChartHandler.setupChart(data,lineChart,chartPane);
+        ChartHandler.setupChart(data, chartPane);
         /*this.DATA.points.addListener((ListChangeListener<DataPoint>) _ -> {
             refreshChart();
         });
@@ -82,14 +82,13 @@ public class Controller {
     public void onBTClick(){
         //BLE.initializeBluetoothConnection(BTstatus);
     }
-    private final List<BLEReceiver> BLE_Connections = new ArrayList<>();
     @FXML //TODO: this needs to be attached to every specific experiment.
     public void closeBT(){
         //ble.closeConnection();
     }
 
     public void shutdown(){
-        for (BLEReceiver ble : BLE_Connections) {
+        for (BLEReceiver ble : ApplicationState.getInstance().getBleConnections()) {
             if (ble != null) {
                 ble.closeConnection();
             }
@@ -107,51 +106,45 @@ public class Controller {
     @FXML
     public void onContinueClick() throws IOException {
         String experiment_name = experimentNameField.getText();
-        ApplicationState.getInstance().setValidationData(new ApplicationState.TabValidation(macField, lowerPinFields, upperPinFields, validationLabel));
+        ApplicationState state = ApplicationState.getInstance();
+
         if (handleContinue(experiment_name)){
             FXMLLoader loader = new FXMLLoader(Application.class.getResource("Experiment.fxml"));
             loader.load();
             Tab newTab = new Tab();
             newTab.setText(experiment_name);
             TabControl experimentcontroller = loader.getController();
-            ApplicationState state = ApplicationState.getInstance();
-            experimentcontroller.initialise(state.getTabData(experiment_name));
+            experimentcontroller.initialise(state.getTabData(experiment_name),DATA,experiment_name);
+            newTab.setContent(loader.getRoot());
             tabPane.getTabs().add(newTab);
         }
     }
 
-    public static boolean handleContinue(String tabname) {
+    public boolean handleContinue(String tabname) {
         ApplicationState state = ApplicationState.getInstance();
-        ApplicationState.TabValidation tabValidation = state.getValidationData();
 
-        boolean allValid = validateFields(tabValidation.macField(), tabValidation.lowerPinFields(), tabValidation.upperPinFields());
-        if (allValid) {
-            if(!state.setTabData(tabname, new ApplicationState.TabData(tabValidation.macField().getText(), tabValidation.lowerPinFields().stream().map(TextField::getText).toList(),
-                    tabValidation.upperPinFields().stream().map(TextField::getText).toList()))){
-                tabValidation.validationLabel().setStyle("-fx-text-fill: red;");
-                tabValidation.validationLabel().setText("Experiment name already in use please use another one");
+        boolean fieldsValid = isFieldValid(macField);
+        for (TextField field : lowerPinFields) fieldsValid = isFieldValid(field) && fieldsValid;
+        for (TextField field : upperPinFields) fieldsValid = isFieldValid(field) && fieldsValid;
+
+        if (fieldsValid) {
+            if(!state.setTabData(tabname, new ApplicationState.TabData(macField.getText(), lowerPinFields.stream().map(TextField::getText).toList(),
+                    upperPinFields.stream().map(TextField::getText).toList()))){
+                validationLabel.setStyle("-fx-text-fill: red;");
+                validationLabel.setText("Experiment name already in use please use another one");
             }else {
-                tabValidation.validationLabel().setStyle("-fx-text-fill: green;");
-                tabValidation.validationLabel().setText("All fields valid!");
+                validationLabel.setStyle("-fx-text-fill: green;");
+                validationLabel.setText("All fields valid!");
                 return true;
             }
         } else{
-            tabValidation.validationLabel().setStyle("-fx-text-fill: red;");
-            tabValidation.validationLabel().setText("Please fill all required fields!");
+            validationLabel.setStyle("-fx-text-fill: red;");
+            validationLabel.setText("Please fill all required fields!");
         }
         return false;
     }
 
-    public static boolean validateFields(TextField macField, List<TextField> lowerPinFields, List<TextField> upperPinFields) {
-        boolean allValid;
-
-        allValid = checkField(macField);
-        for (TextField field : lowerPinFields) allValid = checkField(field) && allValid;
-        for (TextField field : upperPinFields) allValid = checkField(field) && allValid;
-        return allValid;
-    }
-
-    private static boolean checkField(TextField field) {
+    private boolean isFieldValid(TextField field) {
         boolean valid = field.getText() != null && !field.getText().isEmpty();
         field.setStyle(valid ? "" : "-fx-control-inner-background: #ffdddd; -fx-border-color: red;");
         return valid;

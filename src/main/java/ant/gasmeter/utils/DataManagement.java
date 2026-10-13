@@ -16,12 +16,14 @@ import java.util.List;
 import java.util.Objects;
 
 //TODO: rework for it to be able to take a csv file and be created multiple times.
+//TODO: remove from main application state can be reused, just ensure that it can always operate in the background, as each experiemnt will have its own.
 public class DataManagement {
     private final Path CSV;
     public final LocalDateTime BaseTime;
     public ObservableList<DataPoint> points = FXCollections.observableArrayList();
 
-    //creates initial file for data logging;
+    //TODO: remove this have it locally for each experiment
+    @Deprecated
     public DataManagement(){
         Path outputDir = Paths.get(System.getProperty("user.home"), Ref.Name);
         CSV = outputDir.resolve(String.format("Data_%s.csv",getTime()));
@@ -47,7 +49,7 @@ public class DataManagement {
         return date.format(formatter);
     }
 
-
+//TODO: push files to own folder, ask first to create one if not present
     public String copy_CSV(){
         Path datacopy = Paths.get(System.getProperty("user.home"), "Documents").resolve(String.format("Datacopy_%s.csv",getTime()));
         try{

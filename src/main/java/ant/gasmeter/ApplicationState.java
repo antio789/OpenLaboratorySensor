@@ -35,6 +35,7 @@ public class ApplicationState {
     public void setData(DataManagement data) { this.data = data; }
     public List<BLEReceiver> getBleConnections() { return bleConnections; }
 
+
     public TabData getTabData(String tabName) { return TabsData.get(tabName); }
     //TRUE if Successfully added
     public boolean setTabData(String tabName, TabData data) {
@@ -44,10 +45,5 @@ public class ApplicationState {
         TabsData.put(tabName,data);
         return true;
     }
-
-
-    public void setValidationData(TabValidation data) {
-        tabValidation = data;}
-    public TabValidation getValidationData() {return tabValidation;}
 
 }

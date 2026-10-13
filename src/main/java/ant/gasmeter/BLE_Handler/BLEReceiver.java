@@ -8,6 +8,7 @@ import com.github.hypfvieh.bluetooth.wrapper.BluetoothGattCharacteristic;
 import com.github.hypfvieh.bluetooth.wrapper.BluetoothGattService;
 import javafx.concurrent.Task;
 import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
 import org.freedesktop.dbus.exceptions.DBusException;
 
 import java.util.List;
@@ -42,11 +43,12 @@ public class BLEReceiver {
         DATA = _DATA;
     }
 
-    public Boolean initializeBluetoothConnection(Label BTstatus, String address){
-        Task<Boolean> attemptConnection = new Task<>() {
+    // TODO: Right now doesnt catch errors, find a way to transfer a failed connection attempt
+    public void initializeBluetoothConnection(TextField BTstatus, String address){
+        Task attemptConnection = new Task<>() {
 
             @Override
-            protected Boolean call() throws Exception {
+            protected Boolean call() {
                 try{
                     DeviceManager.createInstance(false);
                     deviceManager = DeviceManager.getInstance();
@@ -87,8 +89,7 @@ public class BLEReceiver {
             private void setupGattNotification(BluetoothDevice sensor) throws DBusException {
                 try{
                     Thread.sleep(500);//ensure proper connection before refreshing GATT
-                }catch(InterruptedException ex){
-                    System.out.println("Error: Thread sleep interrupted: " +ex);
+                }catch(InterruptedException ex) {
                     updateMessage("Bluetooth error: " + ex.getMessage());
                     throw new RuntimeException(ex);
                 }
@@ -99,7 +100,6 @@ public class BLEReceiver {
                 try {
                     Cycle_Gatt.startNotify();
                 } catch (Exception ex) {
-                    System.out.println("Error: Cannot start notification: " +ex);
                     updateMessage("Bluetooth error: " + ex.getMessage());
                     throw new RuntimeException(ex);
                 }
@@ -110,12 +110,6 @@ public class BLEReceiver {
         Thread thread = new Thread(attemptConnection);
         thread.setDaemon(true);
         thread.start();
-        try {
-            return true; // TODO: Right now doesnt catch errors stops at device found
-        } catch (Exception e) {
-            System.err.println("Error during Bluetooth initialization: " + e);
-            return false;
-        }
     }
     public void closeConnection() {
         if (sensor != null) {

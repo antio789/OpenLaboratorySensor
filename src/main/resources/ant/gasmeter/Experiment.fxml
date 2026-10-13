@@ -11,5 +11,9 @@
         <padding>
             <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
         </padding>
+        <Button text="Start   Bluetooth Connection" onAction="#connect" maxWidth="200"/>
+        <TextField fx:id="BTstatus" promptText="inactive" maxWidth="800"/>
+        <Button text="Close   BT Connection" onAction="#oncloseBT" maxWidth="200"/>
+        <Pane fx:id="chartPane" prefWidth="500" prefHeight="300" minWidth="500" minHeight="300"/>
     </VBox>
 </ScrollPane>
