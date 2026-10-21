@@ -3,7 +3,7 @@ package ant.gasmeter.Experiment;
 import ant.gasmeter.ApplicationState;
 import ant.gasmeter.ApplicationState.TabData;
 import ant.gasmeter.BLE_Handler.BLEReceiver;
-import ant.gasmeter.utils.DataManagement;
+import ant.gasmeter.utils.ExperimentFileManager;
 import javafx.event.ActionEvent;
 import javafx.scene.chart.LineChart;
 import javafx.scene.control.TextField;
@@ -17,17 +17,19 @@ public class TabControl {
     ApplicationState state;
     LineChart<Number, Number> lineChart;
     private BLEReceiver BLE;
+    ExperimentFileManager fileManager;
 
-    public void initialise(TabData data, DataManagement dataManagement, String name){
+    public void initialise(TabData data, String name){
         Name=name;
         initData = data;
-        ChartHandler.setupChart(dataManagement, chartPane);
+        fileManager = new ExperimentFileManager(name);
+        ChartHandler.setupChart(fileManager, chartPane);
         ApplicationState.getInstance();
     }
 
 
     public void connect(){
-        BLE = new BLEReceiver(state.getData());
+        BLE = new BLEReceiver(fileManager);
         state.getBleConnections().add(BLE);
         BLE.initializeBluetoothConnection(BTstatus, state.getTabData(Name).macAddress());
     }

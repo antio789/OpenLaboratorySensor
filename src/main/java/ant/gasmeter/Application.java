@@ -1,20 +1,18 @@
 package ant.gasmeter;
 
 import ant.gasmeter.BLE_Handler.BLEReceiver;
-import ant.gasmeter.utils.DataManagement;
-import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
-import javafx.scene.control.TabPane;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 
 import java.io.IOException;
+import java.net.URL;
+import java.util.Objects;
 
 /**
  * TODO: splitt tabs into own pages with own controller.
- *
  * TODO: new experiment tab: when created -> push to own tab
  * TODO add a warning when closing the application
  * TODO add option to open from file
@@ -26,15 +24,11 @@ import java.io.IOException;
  *
  */
 public class Application extends javafx.application.Application {
-    DataManagement DATA;
     Controller controller;
-    BLEReceiver BLE;
     @Override
 
     //
     public void start(Stage stage) throws IOException {
-        DATA = new DataManagement();
-        BLE = new BLEReceiver(DATA);
 
         FXMLLoader fxmlLoader = new FXMLLoader(Application.class.getResource("view.fxml"));
         Rectangle2D screenBounds = Screen.getPrimary().getVisualBounds();
@@ -42,11 +36,12 @@ public class Application extends javafx.application.Application {
         double height = screenBounds.getHeight() * 0.5;
         Scene scene = new Scene(fxmlLoader.load(), width, height);
         controller = fxmlLoader.getController();
-        ApplicationState.getInstance().setData(DATA);
 
-        controller.initialize(DATA);
-
-        scene.getStylesheets().add(getClass().getResource("Styles.css").toExternalForm());
+        controller.initialize();
+        URL stylesheet = getClass().getResource("Styles.css");
+        if (stylesheet != null) {
+            scene.getStylesheets().add(stylesheet.toExternalForm());
+        }
         stage.setTitle("Gas Meter");
         stage.setScene(scene);
         stage.show();

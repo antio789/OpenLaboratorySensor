@@ -3,8 +3,6 @@ package ant.gasmeter;
 import ant.gasmeter.BLE_Handler.BLEReceiver;
 import ant.gasmeter.BLE_Handler.BLEScanner;
 import ant.gasmeter.Experiment.TabControl;
-import ant.gasmeter.Experiment.ChartHandler;
-import ant.gasmeter.utils.DataManagement;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -27,7 +25,6 @@ public class Controller {
     public TextField experimentNameField;
     LineChart<Number, Number> lineChart;
 
-    private DataManagement DATA;
     @FXML
     private Label copyStatusLabel;
     @FXML
@@ -51,32 +48,10 @@ public class Controller {
 
     ApplicationState App_state;
 
-    public void initialize(DataManagement data) {
-        this.DATA = data;
-        ChartHandler.setupChart(data, chartPane);
-        /*this.DATA.points.addListener((ListChangeListener<DataPoint>) _ -> {
-            refreshChart();
-        });
-         */
+    public void initialize() {
         App_state = ApplicationState.getInstance();
     }
 
-    @FXML
-    protected void onCopyButtonClick() {
-        String result = DATA.copy_CSV();
-
-        copyStatusLabel.setText(result);
-        if (result.startsWith("Copied")) {
-            copyStatusLabel.setStyle("-fx-text-fill: green;");
-        } else {
-            copyStatusLabel.setStyle("-fx-text-fill: red;");
-        }
-    }
-
-    @FXML
-    public void onDataClick() {
-        DATA.writeStateToCSV("true");
-    }
 
     @FXML
     public void onBTClick(){
@@ -114,7 +89,7 @@ public class Controller {
             Tab newTab = new Tab();
             newTab.setText(experiment_name);
             TabControl experimentcontroller = loader.getController();
-            experimentcontroller.initialise(state.getTabData(experiment_name),DATA,experiment_name);
+            experimentcontroller.initialise(state.getTabData(experiment_name),experiment_name);
             newTab.setContent(loader.getRoot());
             tabPane.getTabs().add(newTab);
         }

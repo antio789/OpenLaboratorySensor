@@ -1,7 +1,7 @@
 package ant.gasmeter;
 
 import ant.gasmeter.BLE_Handler.BLEReceiver;
-import ant.gasmeter.utils.DataManagement;
+import ant.gasmeter.utils.ExperimentFileManager;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 
@@ -17,7 +17,7 @@ public class ApplicationState {
     public record TabData(String macAddress, List<String> lowerPins, List<String> upperPins) {}
     private TabValidation tabValidation;
 
-    private DataManagement data;
+    private ExperimentFileManager data;
     private final List<BLEReceiver> bleConnections = new ArrayList<>();
     private final Map<String, TabData> TabsData = new HashMap<>();
 
@@ -31,8 +31,6 @@ public class ApplicationState {
     }
 
     // Getters and setters
-    public DataManagement getData() { return data; }
-    public void setData(DataManagement data) { this.data = data; }
     public List<BLEReceiver> getBleConnections() { return bleConnections; }
 
 

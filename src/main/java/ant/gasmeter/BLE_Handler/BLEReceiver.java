@@ -1,13 +1,12 @@
 package ant.gasmeter.BLE_Handler;
 
-import ant.gasmeter.utils.DataManagement;
+import ant.gasmeter.utils.ExperimentFileManager;
 import com.github.hypfvieh.bluetooth.DeviceManager;
 import com.github.hypfvieh.bluetooth.wrapper.BluetoothAdapter;
 import com.github.hypfvieh.bluetooth.wrapper.BluetoothDevice;
 import com.github.hypfvieh.bluetooth.wrapper.BluetoothGattCharacteristic;
 import com.github.hypfvieh.bluetooth.wrapper.BluetoothGattService;
 import javafx.concurrent.Task;
-import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import org.freedesktop.dbus.exceptions.DBusException;
 
@@ -23,7 +22,7 @@ public class BLEReceiver {
     BluetoothAdapter BTadapter;
     DeviceManager deviceManager;
     BluetoothDevice sensor;
-    DataManagement DATA;
+    ExperimentFileManager DATA;
 
 
     String ARDUINO_SERVICE_UUID = "a117480e-14a0-482e-b417-629d8829a1c0";
@@ -39,8 +38,8 @@ public class BLEReceiver {
     );
 
 
-    public BLEReceiver(DataManagement _DATA){
-        DATA = _DATA;
+    public BLEReceiver(ExperimentFileManager _data){
+        DATA = _data;
     }
 
     // TODO: Right now doesnt catch errors, find a way to transfer a failed connection attempt

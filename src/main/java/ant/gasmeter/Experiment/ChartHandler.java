@@ -1,6 +1,6 @@
 package ant.gasmeter.Experiment;
 
-import ant.gasmeter.utils.DataManagement;
+import ant.gasmeter.utils.ExperimentFileManager;
 import ant.gasmeter.utils.DataPoint;
 import ant.gasmeter.utils.Ref;
 import javafx.application.Platform;
@@ -20,7 +20,7 @@ import java.util.List;
 //TODO: make it work with multiple lines at the same time, and support more than one experiment as it still uses datamanagement
 public class ChartHandler {
 
-    public static void setupChart(DataManagement data, Pane chartPane) {
+    public static void setupChart(ExperimentFileManager data, Pane chartPane) {
         NumberAxis xAxis = new NumberAxis();
         xAxis.setLabel("Days");
         NumberAxis yAxis = new NumberAxis();
@@ -52,7 +52,7 @@ public class ChartHandler {
         });
     }
 
-    public XYChart.Series<Number,Number> populateserie(DataManagement datasource) throws IOException {
+    public XYChart.Series<Number,Number> populateserie(ExperimentFileManager datasource) throws IOException {
         List<List<String>> values = datasource.readCsvData();
         if(values.isEmpty()) throw new IOException("No data found");
         float gasflow =0;
@@ -72,7 +72,7 @@ public class ChartHandler {
         return series;
     }
 
-    private void refreshChart(LineChart<Number, Number> lineChart,DataManagement DATA){
+    private void refreshChart(LineChart<Number, Number> lineChart, ExperimentFileManager DATA){
         Task<XYChart.Series<Number,Number>> task = new Task<>() {
             @Override
             protected XYChart.Series<Number,Number> call() throws Exception {

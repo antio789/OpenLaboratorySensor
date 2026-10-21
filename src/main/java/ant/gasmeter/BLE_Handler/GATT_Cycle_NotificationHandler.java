@@ -1,6 +1,6 @@
 package ant.gasmeter.BLE_Handler;
 
-import ant.gasmeter.utils.DataManagement;
+import ant.gasmeter.utils.ExperimentFileManager;
 import org.freedesktop.dbus.handlers.AbstractPropertiesChangedHandler;
 import org.freedesktop.dbus.interfaces.Properties;
 import org.freedesktop.dbus.types.Variant;
@@ -10,9 +10,9 @@ import java.util.Map;
 
 public class GATT_Cycle_NotificationHandler extends AbstractPropertiesChangedHandler {
     private final String CharacterPath;
-    private final DataManagement DATA;
+    private final ExperimentFileManager DATA;
 
-    public GATT_Cycle_NotificationHandler(String path, DataManagement _data) {
+    public GATT_Cycle_NotificationHandler(String path, ExperimentFileManager _data) {
         this.CharacterPath = path;
         DATA = _data;
     }

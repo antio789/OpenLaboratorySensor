@@ -17,16 +17,14 @@ import java.util.Objects;
 
 //TODO: rework for it to be able to take a csv file and be created multiple times.
 //TODO: remove from main application state can be reused, just ensure that it can always operate in the background, as each experiemnt will have its own.
-public class DataManagement {
+public class ExperimentFileManager {
     private final Path CSV;
     public final LocalDateTime BaseTime;
     public ObservableList<DataPoint> points = FXCollections.observableArrayList();
 
-    //TODO: remove this have it locally for each experiment
-    @Deprecated
-    public DataManagement(){
+    public ExperimentFileManager(String name){
         Path outputDir = Paths.get(System.getProperty("user.home"), Ref.Name);
-        CSV = outputDir.resolve(String.format("Data_%s.csv",getTime()));
+        CSV = outputDir.resolve(name,String.format("_Experiment_%s.csv",getTime()));
         BaseTime = LocalDateTime.now();
 
         try {
