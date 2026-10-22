@@ -42,6 +42,7 @@ public class Controller {
 
     private final List<TextField> lowerPinFields = new ArrayList<>();
     private final List<TextField> upperPinFields = new ArrayList<>();
+    private final List<TextField> resolutionFields = new ArrayList<>();
 
     ApplicationState App_state;
 
@@ -98,11 +99,21 @@ public class Controller {
         boolean fieldsValid = isFieldValid(macField);
         for (TextField field : lowerPinFields) fieldsValid = isFieldValid(field) && fieldsValid;
         for (TextField field : upperPinFields) fieldsValid = isFieldValid(field) && fieldsValid;
+        for (TextField field : resolutionFields) fieldsValid = isFieldValid(field) && fieldsValid;
+
+        List<Double> resolutions = new ArrayList<>();
+        for (TextField field : resolutionFields) {
+            try {
+                resolutions.add(Double.parseDouble(field.getText()));
+            } catch (NumberFormatException e) {
+                field.setStyle("-fx-control-inner-background: #ffdddd; -fx-border-color: red;");
+                fieldsValid = false;
+            }
+        }
 
         if (fieldsValid) {
-            if(!state.setTabData(tabname, new ApplicationState.TabData(macField.getText(),
-                    lowerPinFields.stream().map(TextField::getText).toList(),
-                    upperPinFields.stream().map(TextField::getText).toList()))){
+            if(!state.setTabData(tabname, new ApplicationState.TabData(macField.getText(), lowerPinFields.stream().map(TextField::getText).toList(),
+                    upperPinFields.stream().map(TextField::getText).toList(), resolutions))){
                 validationLabel.setStyle("-fx-text-fill: red;");
                 validationLabel.setText("Experiment name already in use please use another one");
             }else {
@@ -132,6 +143,7 @@ public class Controller {
             sensorFieldsContainer.getChildren().clear();
             lowerPinFields.clear();
             upperPinFields.clear();
+            resolutionFields.clear();
 
             Label headerSensor = new Label("Sensor Pins");
             headerSensor.setMaxWidth(120);
@@ -140,12 +152,14 @@ public class Controller {
             headerLower.setMinWidth(130);
             Label headerHigher = new Label("Higher");
             headerHigher.setMinWidth(130);
+            Label headerResolution = new Label("Volumetric Resolution");
+            headerResolution.setMinWidth(130);
 
             Label helpIcon = new Label("?");
             helpIcon.setStyle("-fx-background-radius: 50%; -fx-background-color: lightblue; -fx-padding: 5px; -fx-font-size: 14; -fx-min-width: 24px; -fx-min-height: 24px; -fx-alignment: CENTER;");
-            helpIcon.setTooltip(new Tooltip("Please select the pins based on the numbering on the board \n Make sure to Correctly identify which pin is for the lower or higher sensor on the Gas Meter"));
+            helpIcon.setTooltip(new Tooltip("Please select the pins based on the numbering on the board \n Make sure to Correctly identify which pin is for the lower or higher sensor on the Gas Meter \n The volumetric resolution is the volume of gas produced per cycle for this sensor (e.g. 4.5)"));
 
-            HBox headerBox = new HBox(10, headerSensor, headerLower, headerHigher, helpIcon);
+            HBox headerBox = new HBox(10, headerSensor, headerLower, headerHigher, headerResolution, helpIcon);
             headerBox.setAlignment(Pos.CENTER_LEFT);
             sensorFieldsContainer.getChildren().add(headerBox);
 
@@ -165,11 +179,16 @@ public class Controller {
                 upperField.setPromptText("Upper sensor pin");
                 upperField.setMaxWidth(130);
 
-                sensorBox.getChildren().addAll(sensorLabel, lowerField, upperField);
+                TextField resolutionField = new TextField();
+                resolutionField.setPromptText("Volume per cycle");
+                resolutionField.setMaxWidth(130);
+
+                sensorBox.getChildren().addAll(sensorLabel, lowerField, upperField, resolutionField);
                 sensorFieldsContainer.getChildren().add(sensorBox);
 
                 lowerPinFields.add(lowerField);
                 upperPinFields.add(upperField);
+                resolutionFields.add(resolutionField);
             }
         });
     }
