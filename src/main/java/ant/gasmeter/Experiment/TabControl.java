@@ -39,4 +39,8 @@ public class TabControl {
         BLE.closeConnection();
     }
 
+    public void onAddFakeData(ActionEvent actionEvent) {
+        fileManager.addFakeDataPoint();
+    }
+
 }
