@@ -2,7 +2,6 @@ package ant.gasmeter.Experiment;
 
 import ant.gasmeter.utils.ExperimentFileManager;
 import ant.gasmeter.utils.DataPoint;
-import ant.gasmeter.utils.Ref;
 import javafx.application.Platform;
 import javafx.collections.ListChangeListener;
 import javafx.concurrent.Task;
@@ -58,17 +57,25 @@ public class ChartHandler {
     public XYChart.Series<Number,Number> populateserie() throws IOException {
         List<List<String>> values = fileManager.readCsvData();
         if(values.isEmpty()) throw new IOException("No data found");
-        float gasflow =0;
+        int gasflow = 0;
         XYChart.Series<Number, Number> series = new XYChart.Series<>();
         for(List<String> point : values){
             String date = point.getFirst();
             String value = point.get(1);
             if(value.equalsIgnoreCase( "true")){
+                int resolution = 0;
+                for (int i = 2; i < point.size(); i++) {
+                    try {
+                        resolution += Integer.parseInt(point.get(i));
+                    } catch (NumberFormatException ignored) {
+                    }
+                }
+                if (resolution == 0) resolution = fileManager.getTotalResolution();
                 DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd MM yy, k:m");
                 LocalDateTime time = LocalDateTime.parse(date,formatter);
                 Duration duration = Duration.between(fileManager.BaseTime,time);
                 float days = duration.toDays();
-                gasflow+= Ref.VOLUMETRIC_RESOLUTION;
+                gasflow += resolution;
                 series.getData().add(new XYChart.Data<>(days,gasflow));
             }
         }
