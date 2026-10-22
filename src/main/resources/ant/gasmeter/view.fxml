@@ -18,23 +18,6 @@
 
 <?import java.lang.Integer?>
 <TabPane xmlns:fx="http://javafx.com/fxml" fx:controller="ant.gasmeter.Controller" fx:id="tabPane">
-    <Tab text="Overview">
-        <ScrollPane fitToWidth="true" fitToHeight="true">
-            <VBox spacing="20.0">
-                <padding>
-                    <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
-                </padding>
-                <Label fx:id="copyStatusLabel"/>
-                <Button text="Copy" onAction="#onCopyButtonClick" maxWidth="200"/>
-                <Pane fx:id="chartPane" prefWidth="500" prefHeight="300" minWidth="500" minHeight="300"/>
-                <Button text="Add Point" onAction="#onDataClick" maxWidth="200"/>
-                <Button text="Start Bluetooth Connection" onAction="#onBTClick" maxWidth="200"/>
-                <TextField fx:id="BTstatus" promptText="inactive" maxWidth="800"/>
-                <Button text="Close BT Connection" onAction="#closeBT" maxWidth="200"/>
-
-            </VBox>
-        </ScrollPane>
-    </Tab>
     <Tab text="New Experiment" closable="false">
         <ScrollPane fitToWidth="true" fitToHeight="true">
             <VBox spacing="20.0">

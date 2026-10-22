@@ -24,7 +24,7 @@ public class ExperimentFileManager {
 
     public ExperimentFileManager(String name){
         Path outputDir = Paths.get(System.getProperty("user.home"), Ref.Name);
-        CSV = outputDir.resolve(name,String.format("_Experiment_%s.csv",getTime()));
+        CSV = outputDir.resolve(String.format("%s_Experiment_%s.csv", name, getTime()));
         BaseTime = LocalDateTime.now();
 
         try {
@@ -43,7 +43,7 @@ public class ExperimentFileManager {
     //returns the time in the desired format
     private String getTime(){
         LocalDateTime date = LocalDateTime.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd MM yy  k:m:ss");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd_MM_yy_HH_mm_ss");
         return date.format(formatter);
     }
 
@@ -98,7 +98,7 @@ public class ExperimentFileManager {
 
     public void addFakeDataPoint() {
         Platform.runLater(() -> {
-            points.add(new DataPoint(LocalDateTime.now(), (points.size()+1)*Ref.VOLUMETRIC_RESOLUTION));
+            points.add(new DataPoint(BaseTime.plusDays(points.size()), (points.size()+1)*Ref.VOLUMETRIC_RESOLUTION));
         });
     }
 
