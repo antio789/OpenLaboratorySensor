@@ -100,7 +100,8 @@ public class Controller {
         for (TextField field : upperPinFields) fieldsValid = isFieldValid(field) && fieldsValid;
 
         if (fieldsValid) {
-            if(!state.setTabData(tabname, new ApplicationState.TabData(macField.getText(), lowerPinFields.stream().map(TextField::getText).toList(),
+            if(!state.setTabData(tabname, new ApplicationState.TabData(macField.getText(),
+                    lowerPinFields.stream().map(TextField::getText).toList(),
                     upperPinFields.stream().map(TextField::getText).toList()))){
                 validationLabel.setStyle("-fx-text-fill: red;");
                 validationLabel.setText("Experiment name already in use please use another one");
