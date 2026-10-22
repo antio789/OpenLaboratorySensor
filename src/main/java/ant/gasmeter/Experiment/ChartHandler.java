@@ -19,14 +19,17 @@ import java.util.List;
 
 //TODO: make it work with multiple lines at the same time, and support more than one experiment as it still uses datamanagement
 public class ChartHandler {
+    private final LineChart<Number, Number>  lineChart;
+    private final ExperimentFileManager fileManager;
 
-    public static void setupChart(ExperimentFileManager data, Pane chartPane) {
+    public ChartHandler(ExperimentFileManager data, Pane chartPane) {
+        fileManager = data;
         NumberAxis xAxis = new NumberAxis();
         xAxis.setLabel("Days");
         NumberAxis yAxis = new NumberAxis();
         yAxis.setLabel("Gas Flow");
 
-        LineChart<Number, Number> lineChart = new LineChart<>(xAxis, yAxis);
+        lineChart = new LineChart<>(xAxis, yAxis);
         lineChart.setTitle("Live Gas Flow Chart");
         lineChart.setPrefSize(500, 300);
 
@@ -36,13 +39,13 @@ public class ChartHandler {
         lineChart.getData().add(series);
         chartPane.getChildren().add(lineChart);
 
-        data.points.addListener((ListChangeListener<DataPoint>) change -> {
+        fileManager.points.addListener((ListChangeListener<DataPoint>) change -> {
             while (change.next()) {
                 if (change.wasAdded()) {
                     List<DataPoint> added = List.copyOf(change.getAddedSubList());
                     Platform.runLater(() ->{
                         for (DataPoint point : added) {
-                            Duration duration = Duration.between(data.BaseTime,point.timestamp());
+                            Duration duration = Duration.between(fileManager.BaseTime,point.timestamp());
                             double days = duration.toDays();
                             series.getData().add(new XYChart.Data<>(days,point.value()));
                         }
@@ -52,8 +55,8 @@ public class ChartHandler {
         });
     }
 
-    public XYChart.Series<Number,Number> populateserie(ExperimentFileManager datasource) throws IOException {
-        List<List<String>> values = datasource.readCsvData();
+    public XYChart.Series<Number,Number> populateserie() throws IOException {
+        List<List<String>> values = fileManager.readCsvData();
         if(values.isEmpty()) throw new IOException("No data found");
         float gasflow =0;
         XYChart.Series<Number, Number> series = new XYChart.Series<>();
@@ -63,7 +66,7 @@ public class ChartHandler {
             if(value.equalsIgnoreCase( "true")){
                 DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd MM yy, k:m");
                 LocalDateTime time = LocalDateTime.parse(date,formatter);
-                Duration duration = Duration.between(datasource.BaseTime,time);
+                Duration duration = Duration.between(fileManager.BaseTime,time);
                 float days = duration.toDays();
                 gasflow+= Ref.VOLUMETRIC_RESOLUTION;
                 series.getData().add(new XYChart.Data<>(days,gasflow));
@@ -72,11 +75,11 @@ public class ChartHandler {
         return series;
     }
 
-    private void refreshChart(LineChart<Number, Number> lineChart, ExperimentFileManager DATA){
+    private void refreshChart(){
         Task<XYChart.Series<Number,Number>> task = new Task<>() {
             @Override
             protected XYChart.Series<Number,Number> call() throws Exception {
-                return populateserie(DATA);
+                return populateserie();
             }
 
             @Override

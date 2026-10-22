@@ -18,12 +18,13 @@ public class TabControl {
     LineChart<Number, Number> lineChart;
     private BLEReceiver BLE;
     ExperimentFileManager fileManager;
+    ChartHandler chart;
 
     public void initialise(TabData data, String name){
         Name=name;
         initData = data;
         fileManager = new ExperimentFileManager(name);
-        ChartHandler.setupChart(fileManager, chartPane);
+        chart = new ChartHandler(fileManager, chartPane);
         ApplicationState.getInstance();
     }
 

@@ -32,7 +32,7 @@ public class GATT_Cycle_NotificationHandler extends AbstractPropertiesChangedHan
             if (first instanceof Byte b) {
                 boolean valueBool = b != 0;
                 System.out.println("Gas value changed to " + valueBool);
-                DATA.writeStateToCSV(valueBool ? "true" : "false");
+                DATA.writeStateToCSV(Boolean.toString(valueBool));
             } else if (first instanceof Number n) {
                 System.out.println("Received number: " + n);
                 DATA.writeStateToCSV(n.toString());

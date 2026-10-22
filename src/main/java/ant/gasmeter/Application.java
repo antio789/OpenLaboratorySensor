@@ -12,8 +12,6 @@ import java.net.URL;
 import java.util.Objects;
 
 /**
- * TODO: splitt tabs into own pages with own controller.
- * TODO: new experiment tab: when created -> push to own tab
  * TODO add a warning when closing the application
  * TODO add option to open from file
  * TODO add multiple input source support

@@ -23,10 +23,7 @@ import java.util.List;
 public class Controller {
     public Pane chartPane;
     public TextField experimentNameField;
-    LineChart<Number, Number> lineChart;
 
-    @FXML
-    private Label copyStatusLabel;
     @FXML
     private Label validationLabel;
     @FXML
@@ -175,13 +172,4 @@ public class Controller {
             }
         });
     }
-
-    public TextField getBTstatus() {
-        return BTstatus;
-    }
-
-    public void updateBTstatus(String text) {
-        Platform.runLater(()-> BTstatus.setText(text));
-    }
-
 }
