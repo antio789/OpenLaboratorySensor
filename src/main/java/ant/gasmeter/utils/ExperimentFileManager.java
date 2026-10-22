@@ -24,10 +24,13 @@ public class ExperimentFileManager {
     private final List<String> lowerPins;
     private final List<String> upperPins;
     public ObservableList<DataPoint> points = FXCollections.observableArrayList();
+    private final List<Integer> counts;
     private double totalVolume = 0;
 
     public ExperimentFileManager(String name, List<Double> resolutions, List<String> lowerPins, List<String> upperPins){
         this.resolutions = resolutions;
+        this.counts = new ArrayList<>();
+        for (int i = 0; i < resolutions.size(); i++) this.counts.add(0);
         this.lowerPins = lowerPins;
         this.upperPins = upperPins;
         Path outputDir = Paths.get(System.getProperty("user.home"), Ref.Name);
@@ -38,9 +41,11 @@ public class ExperimentFileManager {
             if (!Files.exists(outputDir)) {
                 Files.createDirectories(outputDir);
             }
-            List<String> header = new ArrayList<>(List.of("timestamp,value"));
+            List<String> header = new ArrayList<>();
             for (int i = 0; i < resolutions.size(); i++) {
-                header.set(0, header.getFirst() + ",volumetric_resolution_" + (i + 1));
+                header.add("sensor" + (i + 1) + "_count");
+                header.add("sensor" + (i + 1) + "_time");
+                header.add("sensor" + (i + 1) + "_volume");
             }
             Files.write(CSV, header,StandardCharsets.UTF_8, StandardOpenOption.CREATE);
             System.out.println("CSV written to: " + CSV.toAbsolutePath());
@@ -82,17 +87,25 @@ public class ExperimentFileManager {
             System.err.println("Failed to write CSV: " + e.getMessage());*/
     }
 
-    public void writeStateToCSV(final String state){
-        writeCycleToCSV(state, 0);
-    }
-
-    public void writeCycleToCSV(final String state, final int sensor){
+    public void writeCycleToCSV(final int sensor){
         Task<Void> task = new Task<>() {
             @Override
             protected Void call() {
+                if (sensor < 1 || sensor > resolutions.size()) return null;
+                counts.set(sensor - 1, counts.get(sensor - 1) + 1);
                 try {
-                    List<String> line = new ArrayList<>(List.of(getTime(), sensor > 0 ? Integer.toString(sensor) : state));
-                    for (double resolution : resolutions) line.add(String.valueOf(resolution));
+                    List<String> line = new ArrayList<>();
+                    for (int i = 0; i < resolutions.size(); i++) {
+                        if (i == sensor - 1) {
+                            line.add(String.valueOf(counts.get(i)));
+                            line.add(getTime());
+                            line.add(String.valueOf(getResolution(sensor)));
+                        } else {
+                            line.add(String.valueOf(counts.get(i)));
+                            line.add("");
+                            line.add("");
+                        }
+                    }
                     Files.write(
                             CSV,
                             List.of(String.join(",", line)),
@@ -103,13 +116,11 @@ public class ExperimentFileManager {
                 } catch (IOException e) {
                     System.err.println("Failed to write CSV: " + e.getMessage());
                 }
-                if(sensor > 0){
-                    totalVolume += getResolution(sensor);
-                    final double value = totalVolume;
-                    Platform.runLater(() -> {
-                        points.add(new DataPoint(LocalDateTime.now(), value));
-                    });
-                }
+                totalVolume += getResolution(sensor);
+                final double value = totalVolume;
+                Platform.runLater(() -> {
+                    points.add(new DataPoint(LocalDateTime.now(), value));
+                });
                 return null;
             }
         };

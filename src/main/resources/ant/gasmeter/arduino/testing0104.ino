@@ -17,9 +17,9 @@ struct SensorState {
     unsigned long s1_time = 0, s2_time = 0;
 };
 
-int sensorCount = 1;
-int lowerPins[MAX_SENSORS] = {8};
-int upperPins[MAX_SENSORS] = {9};
+int sensorCount = 0;
+int lowerPins[MAX_SENSORS] = {0};
+int upperPins[MAX_SENSORS] = {0};
 SensorState sensors[MAX_SENSORS];
 unsigned int count = 0;
 const unsigned long STABILITY_DELAY = 80;
@@ -28,9 +28,6 @@ unsigned int previousWarning = 0;
 void setup() {
   Serial.begin(115200);
   while (!Serial);
-
-  pinMode(lowerPins[0], INPUT);
-  pinMode(upperPins[0], INPUT);
 
   if (!BLE.begin()) {
     Serial.println("starting Bluetooth® Low Energy module failed!");
@@ -44,13 +41,15 @@ void setup() {
   sensorService.addCharacteristic(sensorConfig);
   BLE.addService(sensorService);
   cycleNotify.writeValue(0);
-  sensorConfig.writeValue("8,9");
+  sensorConfig.writeValue("");
   BLE.advertise();
 }
 
 void applyConfig() {
     String cfg = sensorConfig.value();
     if (cfg.length() == 0) return;
+    Serial.print("Applying config: ");
+    Serial.println(cfg);
     int idx = 0;
     int pos = 0;
     while (idx < MAX_SENSORS) {

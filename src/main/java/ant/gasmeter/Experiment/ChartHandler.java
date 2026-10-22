@@ -57,25 +57,20 @@ public class ChartHandler {
     public XYChart.Series<Number,Number> populateserie() throws IOException {
         List<List<String>> values = fileManager.readCsvData();
         if(values.isEmpty()) throw new IOException("No data found");
-        double gasflow = 0;
         XYChart.Series<Number, Number> series = new XYChart.Series<>();
+        int sensors = (values.getFirst().size()) / 3;
         for(List<String> point : values){
-            String date = point.getFirst();
-            String value = point.get(1);
-            int sensor = 0;
-            try {
-                sensor = Integer.parseInt(value);
-            } catch (NumberFormatException ignored) {
-                if (value.equalsIgnoreCase("true")) sensor = 1;
-            }
-            if(sensor > 0){
-                double resolution = fileManager.getResolution(sensor);
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd MM yy, k:m");
+            for (int i = 0; i < sensors; i++) {
+                int timeIdx = i * 3 + 1;
+                int volumeIdx = i * 3 + 2;
+                String date = point.get(timeIdx);
+                String volume = point.get(volumeIdx);
+                if (date == null || date.isEmpty() || volume == null || volume.isEmpty()) continue;
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd_MM_yy_HH_mm_ss");
                 LocalDateTime time = LocalDateTime.parse(date,formatter);
                 Duration duration = Duration.between(fileManager.BaseTime,time);
                 double days = duration.toDays();
-                gasflow += resolution;
-                series.getData().add(new XYChart.Data<>(days,gasflow));
+                series.getData().add(new XYChart.Data<>(days,Double.parseDouble(volume)));
             }
         }
         return series;

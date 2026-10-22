@@ -33,13 +33,13 @@ public class GATT_Cycle_NotificationHandler extends AbstractPropertiesChangedHan
                 int sensor = b & 0xFF;
                 if (sensor > 0) {
                     System.out.println("Cycle completed by sensor " + sensor);
-                    DATA.writeCycleToCSV("true", sensor);
+                    DATA.writeCycleToCSV(sensor);
                 }
             } else if (first instanceof Number n) {
                 int sensor = n.intValue();
                 if (sensor > 0) {
                     System.out.println("Cycle completed by sensor " + sensor);
-                    DATA.writeCycleToCSV("true", sensor);
+                    DATA.writeCycleToCSV(sensor);
                 }
             }
         }else{
