@@ -57,24 +57,23 @@ public class ChartHandler {
     public XYChart.Series<Number,Number> populateserie() throws IOException {
         List<List<String>> values = fileManager.readCsvData();
         if(values.isEmpty()) throw new IOException("No data found");
-        int gasflow = 0;
+        double gasflow = 0;
         XYChart.Series<Number, Number> series = new XYChart.Series<>();
         for(List<String> point : values){
             String date = point.getFirst();
             String value = point.get(1);
-            if(value.equalsIgnoreCase( "true")){
-                int resolution = 0;
-                for (int i = 2; i < point.size(); i++) {
-                    try {
-                        resolution += Integer.parseInt(point.get(i));
-                    } catch (NumberFormatException ignored) {
-                    }
-                }
-                if (resolution == 0) resolution = fileManager.getTotalResolution();
+            int sensor = 0;
+            try {
+                sensor = Integer.parseInt(value);
+            } catch (NumberFormatException ignored) {
+                if (value.equalsIgnoreCase("true")) sensor = 1;
+            }
+            if(sensor > 0){
+                double resolution = fileManager.getResolution(sensor);
                 DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd MM yy, k:m");
                 LocalDateTime time = LocalDateTime.parse(date,formatter);
                 Duration duration = Duration.between(fileManager.BaseTime,time);
-                float days = duration.toDays();
+                double days = duration.toDays();
                 gasflow += resolution;
                 series.getData().add(new XYChart.Data<>(days,gasflow));
             }

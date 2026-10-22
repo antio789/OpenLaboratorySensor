@@ -30,12 +30,17 @@ public class GATT_Cycle_NotificationHandler extends AbstractPropertiesChangedHan
         if(value instanceof List<?> byteArr && !byteArr.isEmpty()){
             Object first = byteArr.getFirst();
             if (first instanceof Byte b) {
-                boolean valueBool = b != 0;
-                System.out.println("Gas value changed to " + valueBool);
-                DATA.writeStateToCSV(Boolean.toString(valueBool));
+                int sensor = b & 0xFF;
+                if (sensor > 0) {
+                    System.out.println("Cycle completed by sensor " + sensor);
+                    DATA.writeCycleToCSV("true", sensor);
+                }
             } else if (first instanceof Number n) {
-                System.out.println("Received number: " + n);
-                DATA.writeStateToCSV(n.toString());
+                int sensor = n.intValue();
+                if (sensor > 0) {
+                    System.out.println("Cycle completed by sensor " + sensor);
+                    DATA.writeCycleToCSV("true", sensor);
+                }
             }
         }else{
             System.err.println("Received signal with wrong value type: " + value.getClass().getName());

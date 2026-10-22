@@ -23,7 +23,7 @@ public class TabControl {
     public void initialise(TabData data, String name){
         Name=name;
         initData = data;
-        fileManager = new ExperimentFileManager(name, data.resolutions());
+        fileManager = new ExperimentFileManager(name, data.resolutions(), data.lowerPins(), data.upperPins());
         chart = new ChartHandler(fileManager, chartPane);
         ApplicationState.getInstance();
     }

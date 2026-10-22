@@ -29,6 +29,7 @@ public class BLEReceiver {
     String SENSOR_CYCLE_UUID = "1d1c079e-e607-4faa-9005-7bc16934f4a0";
     String SENSOR_TOTAL_UUID = "1d1c079e-e607-4faa-9005-7bc16934f4a1";
     String SENSOR_WARNING_UUID = "1d1c079e-e607-4faa-9005-7bc16934f4a2";
+    String SENSOR_CONFIG_UUID = "1d1c079e-e607-4faa-9005-7bc16934f4a4";
 
     Map<Integer, String> warningMessages = Map.of(
             1, "SEQUENCE VIOLATION: S2 switched before S1",
@@ -94,6 +95,13 @@ public class BLEReceiver {
                 }
                 BluetoothGattService Service = sensor.getGattServiceByUuid(ARDUINO_SERVICE_UUID);
                 Service.refreshGattCharacteristics();
+
+                BluetoothGattCharacteristic Config_Gatt = Service.getGattCharacteristicByUuid(SENSOR_CONFIG_UUID);
+                if (Config_Gatt != null) {
+                    Config_Gatt.writeValue(DATA.getPinsConfig().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                    updateMessage("sensor config sent");
+                }
+
                 BluetoothGattCharacteristic Cycle_Gatt = Service.getGattCharacteristicByUuid(SENSOR_CYCLE_UUID);
 
                 try {

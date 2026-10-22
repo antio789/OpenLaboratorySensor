@@ -101,10 +101,10 @@ public class Controller {
         for (TextField field : upperPinFields) fieldsValid = isFieldValid(field) && fieldsValid;
         for (TextField field : resolutionFields) fieldsValid = isFieldValid(field) && fieldsValid;
 
-        List<Integer> resolutions = new ArrayList<>();
+        List<Double> resolutions = new ArrayList<>();
         for (TextField field : resolutionFields) {
             try {
-                resolutions.add(Integer.parseInt(field.getText()));
+                resolutions.add(Double.parseDouble(field.getText()));
             } catch (NumberFormatException e) {
                 field.setStyle("-fx-control-inner-background: #ffdddd; -fx-border-color: red;");
                 fieldsValid = false;
@@ -157,7 +157,7 @@ public class Controller {
 
             Label helpIcon = new Label("?");
             helpIcon.setStyle("-fx-background-radius: 50%; -fx-background-color: lightblue; -fx-padding: 5px; -fx-font-size: 14; -fx-min-width: 24px; -fx-min-height: 24px; -fx-alignment: CENTER;");
-            helpIcon.setTooltip(new Tooltip("Please select the pins based on the numbering on the board \n Make sure to Correctly identify which pin is for the lower or higher sensor on the Gas Meter \n The volumetric resolution is the volume of gas produced per cycle"));
+            helpIcon.setTooltip(new Tooltip("Please select the pins based on the numbering on the board \n Make sure to Correctly identify which pin is for the lower or higher sensor on the Gas Meter \n The volumetric resolution is the volume of gas produced per cycle for this sensor (e.g. 4.5)"));
 
             HBox headerBox = new HBox(10, headerSensor, headerLower, headerHigher, headerResolution, helpIcon);
             headerBox.setAlignment(Pos.CENTER_LEFT);

@@ -14,7 +14,7 @@ public class ApplicationState {
     private static ApplicationState instance;
 
     public record TabValidation(TextField macField, List<TextField> lowerPinFields, List<TextField> upperPinFields, Label validationLabel){}
-    public record TabData(String macAddress, List<String> lowerPins, List<String> upperPins, List<Integer> resolutions) {}
+    public record TabData(String macAddress, List<String> lowerPins, List<String> upperPins, List<Double> resolutions) {}
     private TabValidation tabValidation;
 
     private ExperimentFileManager data;

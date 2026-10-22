@@ -14,18 +14,22 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 
 //TODO: rework for it to be able to take a csv file and be created multiple times.
 //TODO: remove from main application state can be reused, just ensure that it can always operate in the background, as each experiemnt will have its own.
 public class ExperimentFileManager {
     private final Path CSV;
     public final LocalDateTime BaseTime;
-    private final List<Integer> resolutions;
+    private final List<Double> resolutions;
+    private final List<String> lowerPins;
+    private final List<String> upperPins;
     public ObservableList<DataPoint> points = FXCollections.observableArrayList();
+    private double totalVolume = 0;
 
-    public ExperimentFileManager(String name, List<Integer> resolutions){
+    public ExperimentFileManager(String name, List<Double> resolutions, List<String> lowerPins, List<String> upperPins){
         this.resolutions = resolutions;
+        this.lowerPins = lowerPins;
+        this.upperPins = upperPins;
         Path outputDir = Paths.get(System.getProperty("user.home"), Ref.Name);
         CSV = outputDir.resolve(String.format("%s_Experiment_%s.csv", name, getTime()));
         BaseTime = LocalDateTime.now();
@@ -46,10 +50,9 @@ public class ExperimentFileManager {
         }
     }
 
-    public int getTotalResolution(){
-        int total = 0;
-        for (int resolution : resolutions) total += resolution;
-        return total;
+    public double getResolution(int sensor){
+        if (sensor < 1 || sensor > resolutions.size()) return 0;
+        return resolutions.get(sensor - 1);
     }
 
     //returns the time in the desired format
@@ -80,35 +83,29 @@ public class ExperimentFileManager {
     }
 
     public void writeStateToCSV(final String state){
+        writeCycleToCSV(state, 0);
+    }
+
+    public void writeCycleToCSV(final String state, final int sensor){
         Task<Void> task = new Task<>() {
             @Override
             protected Void call() {
                 try {
-                    if(Objects.equals(state, "true")) {
-                        List<String> line = new ArrayList<>(List.of(getTime(), state));
-                        for (int resolution : resolutions) line.add(String.valueOf(resolution));
-                        Files.write(
-                                CSV,
-                                List.of(String.join(",", line)),
-                                StandardCharsets.UTF_8,
-                                StandardOpenOption.CREATE,
-                                StandardOpenOption.APPEND
-                        );
-                    } else {
-                        String line = getTime() + "," + state;
-                        Files.write(
-                                CSV,
-                                List.of(line),
-                                StandardCharsets.UTF_8,
-                                StandardOpenOption.CREATE,
-                                StandardOpenOption.APPEND
-                        );
-                    }
+                    List<String> line = new ArrayList<>(List.of(getTime(), sensor > 0 ? Integer.toString(sensor) : state));
+                    for (double resolution : resolutions) line.add(String.valueOf(resolution));
+                    Files.write(
+                            CSV,
+                            List.of(String.join(",", line)),
+                            StandardCharsets.UTF_8,
+                            StandardOpenOption.CREATE,
+                            StandardOpenOption.APPEND
+                    );
                 } catch (IOException e) {
                     System.err.println("Failed to write CSV: " + e.getMessage());
                 }
-                if(Objects.equals(state, "true")){
-                    final int value = (points.size() + 1) * getTotalResolution();
+                if(sensor > 0){
+                    totalVolume += getResolution(sensor);
+                    final double value = totalVolume;
                     Platform.runLater(() -> {
                         points.add(new DataPoint(LocalDateTime.now(), value));
                     });
@@ -121,8 +118,18 @@ public class ExperimentFileManager {
         thread.start();
     }
 
+    public String getPinsConfig(){
+        StringBuilder cfg = new StringBuilder();
+        for (int i = 0; i < lowerPins.size(); i++) {
+            if (i > 0) cfg.append(";");
+            cfg.append(lowerPins.get(i)).append(",").append(upperPins.get(i));
+        }
+        return cfg.toString();
+    }
+
     public void addFakeDataPoint() {
-        final int value = (points.size() + 1) * getTotalResolution();
+        totalVolume += getResolution(1);
+        final double value = totalVolume;
         Platform.runLater(() -> {
             points.add(new DataPoint(BaseTime.plusDays(points.size()), value));
         });
