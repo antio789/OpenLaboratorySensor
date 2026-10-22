@@ -75,24 +75,6 @@ public class ChartHandler {
         return series;
     }
 
-    private void refreshChart(){
-        Task<XYChart.Series<Number,Number>> task = new Task<>() {
-            @Override
-            protected XYChart.Series<Number,Number> call() throws Exception {
-                return populateserie();
-            }
 
-            @Override
-            protected void succeeded() {
-                lineChart.getData().clear();
-                XYChart.Series<Number, Number> series = this.getValue();
-                series.setName("Sensor Data");
-                lineChart.getData().add(series);
-            }
-        };
-        Thread thread = new Thread(task);
-        thread.setDaemon(true);
-        thread.start();
-    }
 
 }

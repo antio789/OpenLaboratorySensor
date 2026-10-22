@@ -72,7 +72,6 @@ public class ExperimentFileManager {
             @Override
             protected Void call() {
                 try {
-                    // take() blocks until something is available
                     String line = getTime()+","+state;
                     Files.write(
                             CSV,
@@ -95,6 +94,12 @@ public class ExperimentFileManager {
         Thread thread = new Thread(task);
         thread.setDaemon(true);
         thread.start();
+    }
+
+    public void addFakeDataPoint() {
+        Platform.runLater(() -> {
+            points.add(new DataPoint(LocalDateTime.now(), (points.size()+1)*Ref.VOLUMETRIC_RESOLUTION));
+        });
     }
 
 
