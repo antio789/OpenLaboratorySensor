@@ -2,5 +2,5 @@ package ant.gasmeter.utils;
 
 import java.time.LocalDateTime;
 
-public record DataPoint(LocalDateTime timestamp, double value) {
+public record DataPoint(LocalDateTime timestamp, int sensor, double value) {
 }

@@ -25,12 +25,16 @@ public class ExperimentFileManager {
     private final List<String> upperPins;
     public ObservableList<DataPoint> points = FXCollections.observableArrayList();
     private final List<Integer> counts;
-    private double totalVolume = 0;
+    private final List<Double> sensorVolumes;
 
     public ExperimentFileManager(String name, List<Double> resolutions, List<String> lowerPins, List<String> upperPins){
         this.resolutions = resolutions;
         this.counts = new ArrayList<>();
-        for (int i = 0; i < resolutions.size(); i++) this.counts.add(0);
+        this.sensorVolumes = new ArrayList<>();
+        for (int i = 0; i < resolutions.size(); i++) {
+            this.counts.add(0);
+            this.sensorVolumes.add(0.0);
+        }
         this.lowerPins = lowerPins;
         this.upperPins = upperPins;
         Path outputDir = Paths.get(System.getProperty("user.home"), Ref.Name);
@@ -53,6 +57,10 @@ public class ExperimentFileManager {
             System.err.println("Failed to write CSV: " + e.getMessage());
             throw new RuntimeException(e);
         }
+    }
+
+    public int getSensorCount(){
+        return resolutions.size();
     }
 
     public double getResolution(int sensor){
@@ -116,10 +124,10 @@ public class ExperimentFileManager {
                 } catch (IOException e) {
                     System.err.println("Failed to write CSV: " + e.getMessage());
                 }
-                totalVolume += getResolution(sensor);
-                final double value = totalVolume;
+                sensorVolumes.set(sensor - 1, sensorVolumes.get(sensor - 1) + getResolution(sensor));
+                final double value = sensorVolumes.get(sensor - 1);
                 Platform.runLater(() -> {
-                    points.add(new DataPoint(LocalDateTime.now(), value));
+                    points.add(new DataPoint(LocalDateTime.now(), sensor, value));
                 });
                 return null;
             }
@@ -139,10 +147,11 @@ public class ExperimentFileManager {
     }
 
     public void addFakeDataPoint() {
-        totalVolume += getResolution(1);
-        final double value = totalVolume;
+        int sensor = (points.size() % resolutions.size()) + 1;
+        sensorVolumes.set(sensor - 1, sensorVolumes.get(sensor - 1) + getResolution(sensor));
+        final double value = sensorVolumes.get(sensor - 1);
         Platform.runLater(() -> {
-            points.add(new DataPoint(BaseTime.plusDays(points.size()), value));
+            points.add(new DataPoint(BaseTime.plusDays(points.size()), sensor, value));
         });
     }
 
