@@ -140,10 +140,39 @@ bool getStableRead(int pin, bool &lastState, unsigned long &lastTime) {
     return lastState;
 }
 
+// human-readable warning descriptions for Serial debugging
+void printWarning(int code) {
+    Serial.print("WARNING: Error Code ");
+    Serial.print(code);
+    Serial.print(" - ");
+    switch (code) {
+        case 1:
+            Serial.println("SEQUENCE VIOLATION: upper sensor triggered before the lower sensor");
+            break;
+        case 2:
+            Serial.println("SEQUENCE VIOLATION: lower sensor receded before the upper sensor was reached");
+            break;
+        case 3:
+            Serial.println("Hovering detected on the upper sensor (unstable liquid level)");
+            break;
+        case 4:
+            Serial.println("Liquid dropped fast or power cut: both sensors disconnected simultaneously (cycle counted)");
+            break;
+        case 5:
+            Serial.println("Invalid sensor pin config received from the application");
+            break;
+        case 6:
+            Serial.println("Bluetooth Low Energy module failed to start at boot (recovered)");
+            break;
+        default:
+            Serial.println("Unknown warning code");
+            break;
+    }
+}
+
 void sendWarning(int code) {
     if(code != previousWarning){
-        Serial.print("WARNING: Error Code ");
-        Serial.println(code);
+        printWarning(code);
         warningNotify.writeValue(code);
         previousWarning = code;
     }
