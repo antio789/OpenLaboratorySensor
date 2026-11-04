@@ -10,6 +10,7 @@ import javafx.concurrent.Task;
 import javafx.scene.control.TextField;
 import org.freedesktop.dbus.exceptions.DBusException;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 //TODO: create log file
@@ -100,8 +101,15 @@ public class BLEReceiver {
 
                 BluetoothGattCharacteristic Config_Gatt = Service.getGattCharacteristicByUuid(SENSOR_CONFIG_UUID);
                 if (Config_Gatt != null) {
-                    Config_Gatt.writeValue(DATA.getSensorPinsConfig().getBytes(java.nio.charset.StandardCharsets.UTF_8));
-                    updateMessage("sensor config sent");
+                    try {
+                        // "request" = acknowledged write, so the sketch is guaranteed to receive the full config
+                        Config_Gatt.writeValue(
+                                DATA.getSensorPinsConfig().getBytes(StandardCharsets.UTF_8),
+                                Map.of("type", "request"));
+                        updateMessage("sensor config sent");
+                    } catch (Exception ex) {
+                        updateMessage("Bluetooth error sending sensor config: " + ex.getMessage());
+                    }
                 }
 
                 BluetoothGattCharacteristic Cycle_Gatt = Service.getGattCharacteristicByUuid(SENSOR_CYCLE_UUID);
