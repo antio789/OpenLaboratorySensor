@@ -40,13 +40,13 @@ public class ChartHandler {
         }
         chartPane.getChildren().add(lineChart);
 
-        fileManager.points.addListener((ListChangeListener<DataPoint>) change -> {
+        fileManager.dataPoints.addListener((ListChangeListener<DataPoint>) change -> {
             while (change.next()) {
                 if (change.wasAdded()) {
                     List<DataPoint> added = List.copyOf(change.getAddedSubList());
                     Platform.runLater(() ->{
                         for (DataPoint point : added) {
-                            Duration duration = Duration.between(fileManager.BaseTime,point.timestamp());
+                            Duration duration = Duration.between(fileManager.experimentStartTime,point.timestamp());
                             double days = duration.toDays();
                             if (point.sensor() >= 1 && point.sensor() <= series.size()) {
                                 series.get(point.sensor() - 1).getData().add(new XYChart.Data<>(days,point.value()));
@@ -75,7 +75,7 @@ public class ChartHandler {
                 if (date == null || date.isEmpty() || vol == null || vol.isEmpty()) continue;
                 DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd_MM_yy_HH_mm_ss");
                 LocalDateTime time = LocalDateTime.parse(date,formatter);
-                Duration duration = Duration.between(fileManager.BaseTime,time);
+                Duration duration = Duration.between(fileManager.experimentStartTime,time);
                 double days = duration.toDays();
                 volume += Double.parseDouble(vol);
                 s.getData().add(new XYChart.Data<>(days,volume));

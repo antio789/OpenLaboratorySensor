@@ -100,7 +100,7 @@ public class BLEReceiver {
 
                 BluetoothGattCharacteristic Config_Gatt = Service.getGattCharacteristicByUuid(SENSOR_CONFIG_UUID);
                 if (Config_Gatt != null) {
-                    Config_Gatt.writeValue(DATA.getPinsConfig().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                    Config_Gatt.writeValue(DATA.getSensorPinsConfig().getBytes(java.nio.charset.StandardCharsets.UTF_8));
                     updateMessage("sensor config sent");
                 }
 

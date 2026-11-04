@@ -18,41 +18,41 @@ import java.util.List;
 //TODO: rework for it to be able to take a csv file and be created multiple times.
 //TODO: remove from main application state can be reused, just ensure that it can always operate in the background, as each experiemnt will have its own.
 public class ExperimentFileManager {
-    private final Path CSV;
-    public final LocalDateTime BaseTime;
-    private final List<Double> resolutions;
-    private final List<String> lowerPins;
-    private final List<String> upperPins;
-    public ObservableList<DataPoint> points = FXCollections.observableArrayList();
-    private final List<Integer> counts;
-    private final List<Double> sensorVolumes;
+    private final Path csvFilePath;
+    public final LocalDateTime experimentStartTime;
+    private final List<Double> sensorResolutions;
+    private final List<String> lowerSensorPins;
+    private final List<String> upperSensorPins;
+    public ObservableList<DataPoint> dataPoints = FXCollections.observableArrayList();
+    private final List<Integer> sensorCycleCounts;
+    private final List<Double> sensorCumulativeVolumes;
 
-    public ExperimentFileManager(String name, List<Double> resolutions, List<String> lowerPins, List<String> upperPins){
-        this.resolutions = resolutions;
-        this.counts = new ArrayList<>();
-        this.sensorVolumes = new ArrayList<>();
-        for (int i = 0; i < resolutions.size(); i++) {
-            this.counts.add(0);
-            this.sensorVolumes.add(0.0);
+    public ExperimentFileManager(String name, List<Double> sensorResolutions, List<String> lowerSensorPins, List<String> upperSensorPins){
+        this.sensorResolutions = sensorResolutions;
+        this.sensorCycleCounts = new ArrayList<>();
+        this.sensorCumulativeVolumes = new ArrayList<>();
+        for (int i = 0; i < sensorResolutions.size(); i++) {
+            this.sensorCycleCounts.add(0);
+            this.sensorCumulativeVolumes.add(0.0);
         }
-        this.lowerPins = lowerPins;
-        this.upperPins = upperPins;
+        this.lowerSensorPins = lowerSensorPins;
+        this.upperSensorPins = upperSensorPins;
         Path outputDir = Paths.get(System.getProperty("user.home"), Ref.Name);
-        CSV = outputDir.resolve(String.format("%s_Experiment_%s.csv", name, getTime()));
-        BaseTime = LocalDateTime.now();
+        csvFilePath = outputDir.resolve(String.format("%s_Experiment_%s.csv", name, getTime()));
+        experimentStartTime = LocalDateTime.now();
 
         try {
             if (!Files.exists(outputDir)) {
                 Files.createDirectories(outputDir);
             }
             List<String> header = new ArrayList<>();
-            for (int i = 0; i < resolutions.size(); i++) {
+            for (int i = 0; i < sensorResolutions.size(); i++) {
                 header.add("sensor" + (i + 1) + "_count");
                 header.add("sensor" + (i + 1) + "_time");
                 header.add("sensor" + (i + 1) + "_volume");
             }
-            Files.write(CSV, header,StandardCharsets.UTF_8, StandardOpenOption.CREATE);
-            System.out.println("CSV written to: " + CSV.toAbsolutePath());
+            Files.write(csvFilePath, header,StandardCharsets.UTF_8, StandardOpenOption.CREATE);
+            System.out.println("CSV written to: " + csvFilePath.toAbsolutePath());
         } catch (IOException e) {
             System.err.println("Failed to write CSV: " + e.getMessage());
             throw new RuntimeException(e);
@@ -60,12 +60,12 @@ public class ExperimentFileManager {
     }
 
     public int getSensorCount(){
-        return resolutions.size();
+        return sensorResolutions.size();
     }
 
-    public double getResolution(int sensor){
-        if (sensor < 1 || sensor > resolutions.size()) return 0;
-        return resolutions.get(sensor - 1);
+    public double getSensorResolution(int sensor){
+        if (sensor < 1 || sensor > sensorResolutions.size()) return 0;
+        return sensorResolutions.get(sensor - 1);
     }
 
     //returns the time in the desired format
@@ -76,10 +76,10 @@ public class ExperimentFileManager {
     }
 
 //TODO: push files to own folder, ask first to create one if not present
-    public String copy_CSV(){
+    public String copyCsvFile(){
         Path datacopy = Paths.get(System.getProperty("user.home"), "Documents").resolve(String.format("Datacopy_%s.csv",getTime()));
         try{
-            Files.copy(CSV,datacopy, StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(csvFilePath,datacopy, StandardCopyOption.REPLACE_EXISTING);
             return String.format("File copied at : %s", datacopy.toAbsolutePath());
         } catch (IOException e) {
             System.err.println("Failed to write CSV: " + e.getMessage());
@@ -87,7 +87,7 @@ public class ExperimentFileManager {
         }
     }
     public List<List<String>> readCsvData() throws IOException {
-        try (BufferedReader reader = Files.newBufferedReader(CSV)){
+        try (BufferedReader reader = Files.newBufferedReader(csvFilePath)){
             return reader.lines()
                     .map(line -> Arrays.asList(line.split(",")))
                     .toList();
@@ -99,23 +99,23 @@ public class ExperimentFileManager {
         Task<Void> task = new Task<>() {
             @Override
             protected Void call() {
-                if (sensor < 1 || sensor > resolutions.size()) return null;
-                counts.set(sensor - 1, counts.get(sensor - 1) + 1);
+                if (sensor < 1 || sensor > sensorResolutions.size()) return null;
+                sensorCycleCounts.set(sensor - 1, sensorCycleCounts.get(sensor - 1) + 1);
                 try {
                     List<String> line = new ArrayList<>();
-                    for (int i = 0; i < resolutions.size(); i++) {
+                    for (int i = 0; i < sensorResolutions.size(); i++) {
                         if (i == sensor - 1) {
-                            line.add(String.valueOf(counts.get(i)));
+                            line.add(String.valueOf(sensorCycleCounts.get(i)));
                             line.add(getTime());
-                            line.add(String.valueOf(getResolution(sensor)));
+                            line.add(String.valueOf(getSensorResolution(sensor)));
                         } else {
-                            line.add(String.valueOf(counts.get(i)));
+                            line.add(String.valueOf(sensorCycleCounts.get(i)));
                             line.add("");
                             line.add("");
                         }
                     }
                     Files.write(
-                            CSV,
+                            csvFilePath,
                             List.of(String.join(",", line)),
                             StandardCharsets.UTF_8,
                             StandardOpenOption.CREATE,
@@ -124,10 +124,10 @@ public class ExperimentFileManager {
                 } catch (IOException e) {
                     System.err.println("Failed to write CSV: " + e.getMessage());
                 }
-                sensorVolumes.set(sensor - 1, sensorVolumes.get(sensor - 1) + getResolution(sensor));
-                final double value = sensorVolumes.get(sensor - 1);
+                sensorCumulativeVolumes.set(sensor - 1, sensorCumulativeVolumes.get(sensor - 1) + getSensorResolution(sensor));
+                final double value = sensorCumulativeVolumes.get(sensor - 1);
                 Platform.runLater(() -> {
-                    points.add(new DataPoint(LocalDateTime.now(), sensor, value));
+                    dataPoints.add(new DataPoint(LocalDateTime.now(), sensor, value));
                 });
                 return null;
             }
@@ -137,21 +137,21 @@ public class ExperimentFileManager {
         thread.start();
     }
 
-    public String getPinsConfig(){
+    public String getSensorPinsConfig(){
         StringBuilder cfg = new StringBuilder();
-        for (int i = 0; i < lowerPins.size(); i++) {
+        for (int i = 0; i < lowerSensorPins.size(); i++) {
             if (i > 0) cfg.append(";");
-            cfg.append(lowerPins.get(i)).append(",").append(upperPins.get(i));
+            cfg.append(lowerSensorPins.get(i)).append(",").append(upperSensorPins.get(i));
         }
         return cfg.toString();
     }
 
     public void addFakeDataPoint() {
-        int sensor = (points.size() % resolutions.size()) + 1;
-        sensorVolumes.set(sensor - 1, sensorVolumes.get(sensor - 1) + getResolution(sensor));
-        final double value = sensorVolumes.get(sensor - 1);
+        int sensor = (dataPoints.size() % sensorResolutions.size()) + 1;
+        sensorCumulativeVolumes.set(sensor - 1, sensorCumulativeVolumes.get(sensor - 1) + getSensorResolution(sensor));
+        final double value = sensorCumulativeVolumes.get(sensor - 1);
         Platform.runLater(() -> {
-            points.add(new DataPoint(BaseTime.plusDays(points.size()), sensor, value));
+            dataPoints.add(new DataPoint(experimentStartTime.plusDays(dataPoints.size()), sensor, value));
         });
     }
 
