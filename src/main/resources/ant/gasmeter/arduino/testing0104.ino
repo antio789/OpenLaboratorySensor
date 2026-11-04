@@ -65,7 +65,16 @@ void setup() {
 
 // error code 5: malformed pin config (missing ',' or ';' separator)
 void applyConfig() {
-    String cfg = sensorConfig.value();
+    // BLECharacteristic::value() returns raw bytes (const uint8_t*), not a String:
+    // build a null-terminated copy so String can be constructed from it
+    String cfg;
+    int len = sensorConfig.valueLength();
+    if (len > 0) {
+        char buf[len + 1];
+        memcpy(buf, sensorConfig.value(), len);
+        buf[len] = '\0';
+        cfg = String(buf);
+    }
     if (cfg.length() == 0) {
         sendWarning(5);
         return;
