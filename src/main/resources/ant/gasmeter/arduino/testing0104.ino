@@ -7,6 +7,14 @@
 BLEService sensorService("a117480e-14a0-482e-b417-629d8829a1c0");
 BLEUnsignedIntCharacteristic cycleNotify("1d1c079e-e607-4faa-9005-7bc16934f4a0", BLERead | BLENotify);
 BLEUnsignedIntCharacteristic sensorTotal("1d1c079e-e607-4faa-9005-7bc16934f4a1",BLERead);
+// Warning codes reported through warningNotify:
+// 0  - no warning (initial state)
+// 1  - SEQUENCE VIOLATION: upper sensor triggered before the lower sensor (liquid passed S2 first)
+// 2  - SEQUENCE VIOLATION: lower sensor receded before the upper sensor was reached
+// 3  - hovering detected on the upper sensor (unstable liquid level)
+// 4  - liquid dropped fast or power cut: both sensors disconnected simultaneously (cycle counted)
+// 5  - invalid sensor pin config received from the application (empty or malformed)
+// 6  - Bluetooth Low Energy module failed to start at boot (sent once the module recovers)
 BLEUnsignedIntCharacteristic warningNotify("1d1c079e-e607-4faa-9005-7bc16934f4a3", BLERead | BLENotify);
 // config string format: "lower1,upper1;lower2,upper2" sensor numbers are 1-based
 // value size is the max config string length in bytes (BLE allows up to 512); large enough for MAX_SENSORS entries
@@ -32,9 +40,13 @@ void setup() {
   Serial.begin(115200);
   while (!Serial);
 
+  bool bleFailedAtStart = false;
   if (!BLE.begin()) {
     Serial.println("starting Bluetooth® Low Energy module failed!");
-    while (1);
+    bleFailedAtStart = true;
+    while (!BLE.begin()) {
+      delay(1000); // retry until the module starts; a BLE warning is impossible while it is down
+    }
   }
   BLE.setLocalName("ArduinoSensor");
   BLE.setAdvertisedService(sensorService);
@@ -46,6 +58,9 @@ void setup() {
   cycleNotify.writeValue(0);
   sensorConfig.writeValue("");
   BLE.advertise();
+  if (bleFailedAtStart) {
+    sendWarning(6);
+  }
 }
 
 // error code 5: malformed pin config (missing ',' or ';' separator)

@@ -36,7 +36,8 @@ public class BLEReceiver {
             2, "SEQUENCE VIOLATION: S1 receded before S2",
             3, "Warning: Hovering detected on S2",
             4, "Warning: Liquid dropped fast or power cut, both disconnected simultaneously",
-            5, "ERROR: Invalid sensor pin config received by the Arduino"
+            5, "ERROR: Invalid sensor pin config received by the Arduino",
+            6, "ERROR: BLE module failed to start at boot (recovered)"
     );
 
 
