@@ -35,7 +35,8 @@ public class BLEReceiver {
             1, "SEQUENCE VIOLATION: S2 switched before S1",
             2, "SEQUENCE VIOLATION: S1 receded before S2",
             3, "Warning: Hovering detected on S2",
-            4, "Warning: Liquid dropped fast or power cut, both disconnected simultaneously"
+            4, "Warning: Liquid dropped fast or power cut, both disconnected simultaneously",
+            5, "ERROR: Invalid sensor pin config received by the Arduino"
     );
 
 

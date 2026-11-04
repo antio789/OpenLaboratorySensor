@@ -48,28 +48,53 @@ void setup() {
   BLE.advertise();
 }
 
+// error code 5: malformed pin config (missing ',' or ';' separator)
 void applyConfig() {
     String cfg = sensorConfig.value();
-    if (cfg.length() == 0) return;
+    if (cfg.length() == 0) {
+        sendWarning(5);
+        return;
+    }
     Serial.print("Applying config: ");
     Serial.println(cfg);
+    int newLower[MAX_SENSORS];
+    int newUpper[MAX_SENSORS];
     int idx = 0;
     int pos = 0;
     while (idx < MAX_SENSORS) {
         int semi = cfg.indexOf(';', pos);
         String pair = (semi == -1) ? cfg.substring(pos) : cfg.substring(pos, semi);
         int comma = pair.indexOf(',');
-        if (comma == -1) break;
-        lowerPins[idx] = pair.substring(0, comma).toInt();
-        upperPins[idx] = pair.substring(comma + 1).toInt();
-        pinMode(lowerPins[idx], INPUT);
-        pinMode(upperPins[idx], INPUT);
-        sensors[idx] = SensorState();
+        if (comma == -1) {
+            Serial.print("Malformed config at pair: ");
+            Serial.println(pair);
+            sendWarning(5);
+            return;
+        }
+        int lower = pair.substring(0, comma).toInt();
+        int upper = pair.substring(comma + 1).toInt();
+        if (lower <= 0 || upper <= 0) {
+            Serial.print("Invalid pin numbers in pair: ");
+            Serial.println(pair);
+            sendWarning(5);
+            return;
+        }
+        newLower[idx] = lower;
+        newUpper[idx] = upper;
         idx++;
         if (semi == -1) break;
         pos = semi + 1;
     }
+    // only apply once the whole config parsed successfully
+    for (int i = 0; i < idx; i++) {
+        lowerPins[i] = newLower[i];
+        upperPins[i] = newUpper[i];
+        pinMode(lowerPins[i], INPUT);
+        pinMode(upperPins[i], INPUT);
+        sensors[i] = SensorState();
+    }
     sensorCount = idx;
+    previousWarning = 0; // re-arm warnings for the new configuration
     Serial.print("Config applied for ");
     Serial.print(sensorCount);
     Serial.println(" sensor(s)");
