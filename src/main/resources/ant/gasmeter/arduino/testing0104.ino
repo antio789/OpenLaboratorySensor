@@ -1,5 +1,7 @@
 #include <ArduinoBLE.h>
 
+// Maximum sensors per experiment. Limited by the board's available digital pins
+// (e.g. Uno/Nano: D2-D13 + A0-A5 = 18 pins = 9 sensor pairs) and the sensorCountCombo in view.fxml.
 #define MAX_SENSORS 5
 
 BLEService sensorService("a117480e-14a0-482e-b417-629d8829a1c0");
@@ -7,7 +9,8 @@ BLEUnsignedIntCharacteristic cycleNotify("1d1c079e-e607-4faa-9005-7bc16934f4a0",
 BLEUnsignedIntCharacteristic sensorTotal("1d1c079e-e607-4faa-9005-7bc16934f4a1",BLERead);
 BLEUnsignedIntCharacteristic warningNotify("1d1c079e-e607-4faa-9005-7bc16934f4a3", BLERead | BLENotify);
 // config string format: "lower1,upper1;lower2,upper2" sensor numbers are 1-based
-BLECharacteristic sensorConfig("1d1c079e-e607-4faa-9005-7bc16934f4a4", BLERead | BLEWrite, 60);
+// value size is the max config string length in bytes (BLE allows up to 512); large enough for MAX_SENSORS entries
+BLECharacteristic sensorConfig("1d1c079e-e607-4faa-9005-7bc16934f4a4", BLERead | BLEWrite, 120);
 
 enum CycleState { IDLE, D1_ACTIVE, BOTH_ACTIVE, D2_RELEASED };
 
