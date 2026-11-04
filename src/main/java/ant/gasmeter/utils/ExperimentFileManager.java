@@ -45,13 +45,14 @@ public class ExperimentFileManager {
             if (!Files.exists(outputDir)) {
                 Files.createDirectories(outputDir);
             }
-            List<String> header = new ArrayList<>();
+            List<String> headerCells = new ArrayList<>();
             for (int i = 0; i < sensorResolutions.size(); i++) {
-                header.add("sensor" + (i + 1) + "_count");
-                header.add("sensor" + (i + 1) + "_time");
-                header.add("sensor" + (i + 1) + "_volume");
+                headerCells.add("sensor" + (i + 1) + "_count");
+                headerCells.add("sensor" + (i + 1) + "_time");
+                headerCells.add("sensor" + (i + 1) + "_volume");
             }
-            Files.write(csvFilePath, header,StandardCharsets.UTF_8, StandardOpenOption.CREATE);
+            // Files.write puts each iterable element on its own line, so the cells must be joined into one line first
+            Files.write(csvFilePath, List.of(String.join(",", headerCells)),StandardCharsets.UTF_8, StandardOpenOption.CREATE);
             System.out.println("CSV written to: " + csvFilePath.toAbsolutePath());
         } catch (IOException e) {
             System.err.println("Failed to write CSV: " + e.getMessage());
