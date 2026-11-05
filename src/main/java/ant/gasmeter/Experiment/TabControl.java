@@ -103,7 +103,7 @@ public class TabControl {
         }
 
         // 4. log the closure and close the tab
-        logger.log("experiment closed, total volume: " + fileManager.getTotalVolume());
+        logger.log("experiment closed");
         state.removeTabData(Name); // free the experiment name for reuse
         if (tab != null && tab.getTabPane() != null) {
             tab.getTabPane().getTabs().remove(tab);
