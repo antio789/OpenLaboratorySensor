@@ -24,7 +24,7 @@ import java.util.Map;
 
 public class BLEScanner {
     private BluetoothAdapter adapter;
-    private record DeviceData(String[] uuids, String mac) {}
+    private record DeviceData(String name, String[] uuids, String mac) {}
 
     public BLEScanner(TextField macField) {
         Map<String, DeviceData> deviceMap = new HashMap<>();
@@ -67,14 +67,19 @@ public class BLEScanner {
                     adapter.startDiscovery();
                     while (!isCancelled()) {
                         List<BluetoothDevice> discovered = deviceManager.getDevices(false);
-                        List<BluetoothDevice> scanning = discovered.stream().filter(dev -> dev.getName() != null && dev.getUuids() != null && dev.getUuids().length > 0).toList();
+                        // snapshot the device data on this thread: BlueZ can null out properties mid-discovery,
+                        // so the UI thread must not read from the live wrappers
+                        List<DeviceData> scanning = discovered.stream()
+                                .filter(dev -> dev.getName() != null && dev.getUuids() != null && dev.getUuids().length > 0)
+                                .map(dev -> new DeviceData(dev.getName(), dev.getUuids().clone(), dev.getAddress()))
+                                .toList();
                         if (!scanning.isEmpty()) {
                             Platform.runLater(() -> {
-                                for (BluetoothDevice device : scanning) {
-                                    String deviceDisplay = device.getName() + " : " + Arrays.toString(device.getUuids());
+                                for (DeviceData device : scanning) {
+                                    String deviceDisplay = device.name() + " : " + Arrays.toString(device.uuids());
                                     if (!deviceItems.contains(deviceDisplay)) {
                                         deviceItems.add(deviceDisplay);
-                                        deviceMap.put(deviceDisplay, new DeviceData(device.getUuids().clone(), device.getAddress()));
+                                        deviceMap.put(deviceDisplay, device);
                                     }
                                 }
                             });
