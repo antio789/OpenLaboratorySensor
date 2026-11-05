@@ -89,7 +89,7 @@ public class BLEReceiver {
                 return null;
             }
 
-            private void setupGattNotification(BluetoothDevice sensor) throws DBusException {
+            private void setupGattNotification(BluetoothDevice sensor) throws DBusException, InterruptedException {
                 try{
                     Thread.sleep(500);//ensure proper connection before refreshing GATT
                 }catch(InterruptedException ex) {
@@ -99,8 +99,19 @@ public class BLEReceiver {
                 BluetoothGattService Service = sensor.getGattServiceByUuid(ARDUINO_SERVICE_UUID);
                 Service.refreshGattCharacteristics();
 
-                BluetoothGattCharacteristic Config_Gatt = Service.getGattCharacteristicByUuid(SENSOR_CONFIG_UUID);
-                if (Config_Gatt != null) {
+                // on a first connection BlueZ may still be discovering the characteristics,
+                // so retry the lookup instead of silently skipping the config write
+                BluetoothGattCharacteristic Config_Gatt = null;
+                for (int attempt = 0; attempt < 5 && Config_Gatt == null; attempt++) {
+                    Config_Gatt = Service.getGattCharacteristicByUuid(SENSOR_CONFIG_UUID);
+                    if (Config_Gatt == null) {
+                        Service.refreshGattCharacteristics();
+                        Thread.sleep(500);
+                    }
+                }
+                if (Config_Gatt == null) {
+                    updateMessage("sensor config characteristic not found on device");
+                } else {
                     try {
                         // "request" = acknowledged write, so the sketch is guaranteed to receive the full config
                         Config_Gatt.writeValue(
@@ -112,8 +123,19 @@ public class BLEReceiver {
                     }
                 }
 
-                BluetoothGattCharacteristic Cycle_Gatt = Service.getGattCharacteristicByUuid(SENSOR_CYCLE_UUID);
+                BluetoothGattCharacteristic Cycle_Gatt = null;
+                for (int attempt = 0; attempt < 5 && Cycle_Gatt == null; attempt++) {
+                    Cycle_Gatt = Service.getGattCharacteristicByUuid(SENSOR_CYCLE_UUID);
+                    if (Cycle_Gatt == null) {
+                        Service.refreshGattCharacteristics();
+                        Thread.sleep(500);
+                    }
+                }
 
+                if (Cycle_Gatt == null) {
+                    updateMessage("cycle characteristic not found on device");
+                    return;
+                }
                 try {
                     Cycle_Gatt.startNotify();
                 } catch (Exception ex) {
