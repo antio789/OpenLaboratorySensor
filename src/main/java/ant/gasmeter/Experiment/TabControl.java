@@ -25,7 +25,7 @@ public class TabControl {
         initData = data;
         fileManager = new ExperimentFileManager(name, data.resolutions(), data.lowerPins(), data.upperPins());
         chart = new ChartHandler(fileManager, chartPane);
-        ApplicationState.getInstance();
+        state = ApplicationState.getInstance();
     }
 
 

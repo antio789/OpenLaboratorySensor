@@ -65,7 +65,14 @@ void setup() {
 
 // error code 5: malformed pin config (missing ',' or ';' separator)
 void applyConfig() {
-    String cfg = sensorConfig.value();
+    String cfg;
+    int len = sensorConfig.valueLength();
+    if (len > 0) {
+        char buf[len + 1];
+        memcpy(buf, sensorConfig.value(), len);
+        buf[len] = '\0';
+        cfg = String(buf);
+    }
     if (cfg.length() == 0) {
         sendWarning(5);
         return;
