@@ -4,7 +4,6 @@ import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -15,7 +14,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-//TODO: rework for it to be able to take a csv file and be created multiple times.
 //TODO: remove from main application state can be reused, just ensure that it can always operate in the background, as each experiemnt will have its own.
 public class ExperimentFileManager {
     private final Path csvFilePath;
@@ -45,14 +43,8 @@ public class ExperimentFileManager {
             if (!Files.exists(outputDir)) {
                 Files.createDirectories(outputDir);
             }
-            List<String> headerCells = new ArrayList<>();
-            for (int i = 0; i < sensorResolutions.size(); i++) {
-                headerCells.add("sensor" + (i + 1) + "_count");
-                headerCells.add("sensor" + (i + 1) + "_time");
-                headerCells.add("sensor" + (i + 1) + "_volume");
-            }
-            // Files.write puts each iterable element on its own line, so the cells must be joined into one line first
-            Files.write(csvFilePath, List.of(String.join(",", headerCells)),StandardCharsets.UTF_8, StandardOpenOption.CREATE);
+            // event-log format: one self-contained row per completed cycle, no empty cells
+            Files.write(csvFilePath, List.of("sensor,count,time,volume"), StandardCharsets.UTF_8, StandardOpenOption.CREATE);
             System.out.println("CSV written to: " + csvFilePath.toAbsolutePath());
         } catch (IOException e) {
             System.err.println("Failed to write CSV: " + e.getMessage());
@@ -87,13 +79,15 @@ public class ExperimentFileManager {
             return "Failed to write CSV: " + e.getMessage();
         }
     }
+
+    //returns the data rows of the csv, header row skipped
     public List<List<String>> readCsvData() throws IOException {
         try (BufferedReader reader = Files.newBufferedReader(csvFilePath)){
             return reader.lines()
+                    .skip(1)
                     .map(line -> Arrays.asList(line.split(",")))
                     .toList();
-        }/*catch (IOException e){
-            System.err.println("Failed to write CSV: " + e.getMessage());*/
+        }
     }
 
     public void writeCycleToCSV(final int sensor){
@@ -103,25 +97,8 @@ public class ExperimentFileManager {
                 if (sensor < 1 || sensor > sensorResolutions.size()) return null;
                 sensorCycleCounts.set(sensor - 1, sensorCycleCounts.get(sensor - 1) + 1);
                 try {
-                    List<String> line = new ArrayList<>();
-                    for (int i = 0; i < sensorResolutions.size(); i++) {
-                        if (i == sensor - 1) {
-                            line.add(String.valueOf(sensorCycleCounts.get(i)));
-                            line.add(getTime());
-                            line.add(String.valueOf(getSensorResolution(sensor)));
-                        } else {
-                            line.add(String.valueOf(sensorCycleCounts.get(i)));
-                            line.add("");
-                            line.add("");
-                        }
-                    }
-                    Files.write(
-                            csvFilePath,
-                            List.of(String.join(",", line)),
-                            StandardCharsets.UTF_8,
-                            StandardOpenOption.CREATE,
-                            StandardOpenOption.APPEND
-                    );
+                    String line = sensor + "," + sensorCycleCounts.get(sensor - 1) + "," + getTime() + "," + getSensorResolution(sensor);
+                    Files.write(csvFilePath, List.of(line), StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
                 } catch (IOException e) {
                     System.err.println("Failed to write CSV: " + e.getMessage());
                 }
