@@ -60,6 +60,14 @@ public class Controller {
         //ble.closeConnection();
     }
 
+    //TRUE if at least one experiment tab is open
+    public boolean hasRunningExperiments(){
+        for (Tab tab : tabPane.getTabs()) {
+            if (!tab.getText().equals("New Experiment")) return true;
+        }
+        return false;
+    }
+
     public void shutdown(){
         for (BLEReceiver ble : ApplicationState.getInstance().getBleConnections()) {
             if (ble != null) {

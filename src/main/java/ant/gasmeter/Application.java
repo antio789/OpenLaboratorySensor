@@ -1,18 +1,22 @@
 package ant.gasmeter;
 
 import ant.gasmeter.BLE_Handler.BLEReceiver;
+import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
+
+import java.util.Optional;
 
 import java.io.IOException;
 import java.net.URL;
 import java.util.Objects;
 
 /**
- * TODO add a warning when closing the application
  * TODO add option to open from file
  * TODO add multiple input source support
  * TODO add support for USB arduino
@@ -42,6 +46,22 @@ public class Application extends javafx.application.Application {
         }
         stage.setTitle("Gas Meter");
         stage.setScene(scene);
+        // warn before closing: running experiments could lose data, bt connections are closed on exit
+        stage.setOnCloseRequest(windowEvent -> {
+            if (controller.hasRunningExperiments()) {
+                Alert warning = new Alert(Alert.AlertType.CONFIRMATION,
+                        "Experiments are still running. Closing the application will close the bluetooth connections and unsaved data could be lost.",
+                        ButtonType.YES, ButtonType.CANCEL);
+                warning.setHeaderText("Quit application?");
+                Optional<ButtonType> result = warning.showAndWait();
+                if (result.isEmpty() || result.get() != ButtonType.YES) {
+                    windowEvent.consume(); // keep the application open
+                    return;
+                }
+            }
+            controller.shutdown();
+            Platform.exit();
+        });
         stage.show();
     }
 
