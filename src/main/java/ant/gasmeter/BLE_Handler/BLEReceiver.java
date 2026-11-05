@@ -1,6 +1,7 @@
 package ant.gasmeter.BLE_Handler;
 
 import ant.gasmeter.utils.ExperimentFileManager;
+import ant.gasmeter.utils.Logger;
 import com.github.hypfvieh.bluetooth.DeviceManager;
 import com.github.hypfvieh.bluetooth.wrapper.BluetoothAdapter;
 import com.github.hypfvieh.bluetooth.wrapper.BluetoothDevice;
@@ -24,6 +25,7 @@ public class BLEReceiver {
     DeviceManager deviceManager;
     BluetoothDevice sensor;
     ExperimentFileManager DATA;
+    Logger logger;
 
 
     String ARDUINO_SERVICE_UUID = "a117480e-14a0-482e-b417-629d8829a1c0";
@@ -42,8 +44,15 @@ public class BLEReceiver {
     );
 
 
-    public BLEReceiver(ExperimentFileManager _data){
+    public BLEReceiver(ExperimentFileManager _data, Logger _logger){
         DATA = _data;
+        logger = _logger;
+    }
+
+    //updates the connection status message and logs it
+    private void status(String message){
+        updateMessage(message);
+        if (logger != null) logger.log(message);
     }
 
     // TODO: Right now doesnt catch errors, find a way to transfer a failed connection attempt
@@ -57,14 +66,14 @@ public class BLEReceiver {
                     deviceManager = DeviceManager.getInstance();
                     BTadapter = deviceManager.getAdapters().getFirst();
                     deviceManager.setDefaultAdapter(BTadapter);
-                    this.updateMessage("All fields valid, connecting to device");
+                    status("All fields valid, connecting to device");
 
                     sensor = findDevice(address);
                     if (sensor != null) {
                         setupGattNotification(sensor);
                         return true;
                     }else{
-                        this.updateMessage("device not found");
+                        this.status("device not found");
                         return false;
                     }
                 } catch (Exception e) {
@@ -76,16 +85,16 @@ public class BLEReceiver {
                 List<BluetoothDevice> devices = deviceManager.getDevices(false);
                 for (BluetoothDevice dev : devices) {
                     if (dev.getAddress().equalsIgnoreCase(mac)) {
-                        updateMessage("device found");
+                        status("device found");
                         if (dev.connect()) {
-                            updateMessage("connected");
+                            status("connected");
                         } else {
-                            updateMessage("connection failed");
+                            status("connection failed");
                         }
                         return dev;
                     }
                 }
-                updateMessage("device not found");
+                status("device not found");
                 return null;
             }
 
@@ -93,7 +102,7 @@ public class BLEReceiver {
                 try{
                     Thread.sleep(500);//ensure proper connection before refreshing GATT
                 }catch(InterruptedException ex) {
-                    updateMessage("Bluetooth error: " + ex.getMessage());
+                    status("Bluetooth error: " + ex.getMessage());
                     throw new RuntimeException(ex);
                 }
                 BluetoothGattService Service = sensor.getGattServiceByUuid(ARDUINO_SERVICE_UUID);
@@ -110,16 +119,16 @@ public class BLEReceiver {
                     }
                 }
                 if (Config_Gatt == null) {
-                    updateMessage("sensor config characteristic not found on device");
+                    status("sensor config characteristic not found on device");
                 } else {
                     try {
                         // "request" = acknowledged write, so the sketch is guaranteed to receive the full config
                         Config_Gatt.writeValue(
                                 DATA.getSensorPinsConfig().getBytes(StandardCharsets.UTF_8),
                                 Map.of("type", "request"));
-                        updateMessage("sensor config sent");
+                        status("sensor config sent");
                     } catch (Exception ex) {
-                        updateMessage("Bluetooth error sending sensor config: " + ex.getMessage());
+                        status("Bluetooth error sending sensor config: " + ex.getMessage());
                     }
                 }
 
@@ -133,16 +142,16 @@ public class BLEReceiver {
                 }
 
                 if (Cycle_Gatt == null) {
-                    updateMessage("cycle characteristic not found on device");
+                    status("cycle characteristic not found on device");
                     return;
                 }
                 try {
                     Cycle_Gatt.startNotify();
                 } catch (Exception ex) {
-                    updateMessage("Bluetooth error: " + ex.getMessage());
+                    status("Bluetooth error: " + ex.getMessage());
                     throw new RuntimeException(ex);
                 }
-                deviceManager.registerPropertyHandler(new GATT_Cycle_NotificationHandler(Cycle_Gatt.getDbusPath(),DATA));
+                deviceManager.registerPropertyHandler(new GATT_Cycle_NotificationHandler(Cycle_Gatt.getDbusPath(),DATA,logger));
             }
         };
         BTstatus.textProperty().bind(attemptConnection.messageProperty());
