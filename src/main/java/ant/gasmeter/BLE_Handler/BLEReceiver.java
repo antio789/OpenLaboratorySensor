@@ -49,15 +49,16 @@ public class BLEReceiver {
         logger = _logger;
     }
 
-    //updates the connection status message and logs it
-    private void status(String message){
-        updateMessage(message);
-        if (logger != null) logger.log(message);
-    }
-
     // TODO: Right now doesnt catch errors, find a way to transfer a failed connection attempt
     public void initializeBluetoothConnection(TextField BTstatus, String address){
         Task attemptConnection = new Task<>() {
+
+            //updates the connection status message and logs it; must live inside the Task,
+            //updateMessage is only accessible from the Task subclass
+            private void status(String message){
+                updateMessage(message);
+                if (logger != null) logger.log(message);
+            }
 
             @Override
             protected Boolean call() {
