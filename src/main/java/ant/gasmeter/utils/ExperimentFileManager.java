@@ -96,13 +96,13 @@ public class ExperimentFileManager {
             protected Void call() {
                 if (sensor < 1 || sensor > sensorResolutions.size()) return null;
                 sensorCycleCounts.set(sensor - 1, sensorCycleCounts.get(sensor - 1) + 1);
+                sensorCumulativeVolumes.set(sensor - 1, sensorCumulativeVolumes.get(sensor - 1) + getSensorResolution(sensor));
                 try {
-                    String line = sensor + "," + sensorCycleCounts.get(sensor - 1) + "," + getTime() + "," + getSensorResolution(sensor);
+                    String line = sensor + "," + sensorCycleCounts.get(sensor - 1) + "," + getTime() + "," + sensorCumulativeVolumes.get(sensor - 1);
                     Files.write(csvFilePath, List.of(line), StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
                 } catch (IOException e) {
                     System.err.println("Failed to write CSV: " + e.getMessage());
                 }
-                sensorCumulativeVolumes.set(sensor - 1, sensorCumulativeVolumes.get(sensor - 1) + getSensorResolution(sensor));
                 final double value = sensorCumulativeVolumes.get(sensor - 1);
                 Platform.runLater(() -> {
                     dataPoints.add(new DataPoint(LocalDateTime.now(), sensor, value));
@@ -115,7 +115,7 @@ public class ExperimentFileManager {
         thread.start();
     }
 
-    //exports the event log as a wide CSV: one column block per sensor (count, time, volume, cumulative volume),
+    //exports the event log as a wide CSV: one column block per sensor (count, time, cumulative volume),
     //one row per event, blanks for sensors that did not fire - easy to read and chart in a spreadsheet
     public String exportCsvFile(){
         String fileName = csvFilePath.getFileName().toString().replace("_Experiment_", "_Export_");
@@ -127,25 +127,19 @@ public class ExperimentFileManager {
             for (int i = 1; i <= getSensorCount(); i++) {
                 headerCells.add("sensor" + i + "_count");
                 headerCells.add("sensor" + i + "_time");
-                headerCells.add("sensor" + i + "_volume");
                 headerCells.add("sensor" + i + "_cumulative_volume");
             }
             lines.add(String.join(",", headerCells));
 
-            double[] cumulative = new double[getSensorCount()];
             for (List<String> record : records) {
                 int sensor = Integer.parseInt(record.get(0));
-                double volume = Double.parseDouble(record.get(3));
-                cumulative[sensor - 1] += volume;
                 List<String> cells = new ArrayList<>();
                 for (int i = 1; i <= getSensorCount(); i++) {
                     if (i == sensor) {
                         cells.add(record.get(1));  // count
                         cells.add(record.get(2));  // time
-                        cells.add(record.get(3));  // volume of this cycle
-                        cells.add(String.valueOf(cumulative[sensor - 1]));
+                        cells.add(record.get(3));  // cumulative volume
                     } else {
-                        cells.add("");
                         cells.add("");
                         cells.add("");
                         cells.add("");

@@ -67,14 +67,13 @@ public class ChartHandler {
         for (int i = 1; i <= fileManager.getSensorCount(); i++) {
             XYChart.Series<Number, Number> s = new XYChart.Series<>();
             s.setName("Sensor " + i);
-            double volume = 0;
             for (List<String> record : records) {
                 if (Integer.parseInt(record.get(0)) != i) continue;
                 LocalDateTime time = LocalDateTime.parse(record.get(2), formatter);
                 Duration duration = Duration.between(fileManager.experimentStartTime, time);
                 double days = duration.toDays();
-                volume += Double.parseDouble(record.get(3));
-                s.getData().add(new XYChart.Data<>(days, volume));
+                // volume column is cumulative, use it directly
+                s.getData().add(new XYChart.Data<>(days, Double.parseDouble(record.get(3))));
             }
             result.add(s);
         }
