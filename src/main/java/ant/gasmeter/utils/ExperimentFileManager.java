@@ -52,6 +52,12 @@ public class ExperimentFileManager {
         }
     }
 
+    public double getTotalVolume(){
+        double total = 0;
+        for (double volume : sensorCumulativeVolumes) total += volume;
+        return total;
+    }
+
     public int getSensorCount(){
         return sensorResolutions.size();
     }

@@ -44,4 +44,8 @@ public class ApplicationState {
         return true;
     }
 
+    public void removeTabData(String tabName) {
+        TabsData.remove(tabName);
+    }
+
 }

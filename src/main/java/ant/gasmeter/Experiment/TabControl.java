@@ -7,6 +7,9 @@ import ant.gasmeter.utils.ExperimentFileManager;
 import ant.gasmeter.utils.Logger;
 import javafx.event.ActionEvent;
 import javafx.scene.chart.LineChart;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.Tab;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.Pane;
@@ -15,9 +18,10 @@ import javafx.stage.FileChooser;
 import java.io.File;
 
 public class TabControl {
-    public Pane chartPane; //<Pane fx:id="chartPane" prefWidth="500" prefHeight="300" minWidth="500" minHeight="300"/>
+    public Pane chartPane;
     public TextArea logArea;
     public TextField BTstatus;
+    private Tab tab;
     private String Name;
     TabData initData;
     ApplicationState state;
@@ -27,16 +31,16 @@ public class TabControl {
     ChartHandler chart;
     Logger logger;
 
-    public void initialise(TabData data, String name){
+    public void initialise(TabData data, String name, Tab tab){
         Name=name;
+        this.tab = tab;
         initData = data;
         logger = new Logger(name, logArea);
         logger.log("experiment created with " + data.resolutions().size() + " sensor(s)");
+        state = ApplicationState.getInstance();
         fileManager = new ExperimentFileManager(name, data.resolutions(), data.lowerPins(), data.upperPins());
         chart = new ChartHandler(fileManager, chartPane);
-        state = ApplicationState.getInstance();
     }
-
 
     public void connect(){
         BLE = new BLEReceiver(fileManager, logger);
@@ -60,6 +64,10 @@ public class TabControl {
     }
 
     public void onExport(ActionEvent actionEvent) {
+        doExport();
+    }
+
+    private void doExport(){
         FileChooser chooser = new FileChooser();
         chooser.setTitle("Export experiment data");
         chooser.setInitialDirectory(fileManager.getLogDirectory().toFile());
@@ -71,4 +79,34 @@ public class TabControl {
         }
     }
 
+    public void onCloseExperiment(ActionEvent actionEvent) {
+        // 1. confirm
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
+                "Close this experiment? The bluetooth connection will be closed.",
+                ButtonType.YES, ButtonType.NO);
+        confirm.setHeaderText("Close experiment " + Name);
+        if (confirm.showAndWait().orElse(ButtonType.NO) != ButtonType.YES) return;
+
+        // 2. close the bluetooth connection
+        if (BLE != null) {
+            state.getBleConnections().remove(BLE);
+            BLE.closeConnection();
+        }
+
+        // 3. offer a final export
+        Alert export = new Alert(Alert.AlertType.CONFIRMATION,
+                "Export the data before closing?",
+                ButtonType.YES, ButtonType.NO);
+        export.setHeaderText("Export");
+        if (export.showAndWait().orElse(ButtonType.NO) == ButtonType.YES) {
+            doExport();
+        }
+
+        // 4. log the closure and close the tab
+        logger.log("experiment closed, total volume: " + fileManager.getTotalVolume());
+        state.removeTabData(Name); // free the experiment name for reuse
+        if (tab != null && tab.getTabPane() != null) {
+            tab.getTabPane().getTabs().remove(tab);
+        }
+    }
 }

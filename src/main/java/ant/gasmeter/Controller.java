@@ -86,8 +86,9 @@ public class Controller {
             loader.load();
             Tab newTab = new Tab();
             newTab.setText(experiment_name);
+            newTab.setClosable(false); // closing is done via the Close Experiment button
             TabControl experimentcontroller = loader.getController();
-            experimentcontroller.initialise(state.getTabData(experiment_name),experiment_name);
+            experimentcontroller.initialise(state.getTabData(experiment_name),experiment_name,newTab);
             newTab.setContent(loader.getRoot());
             tabPane.getTabs().add(newTab);
         }
