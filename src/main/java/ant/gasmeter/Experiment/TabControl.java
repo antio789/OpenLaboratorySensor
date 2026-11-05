@@ -39,7 +39,11 @@ public class TabControl {
     }
 
     public void oncloseBT(ActionEvent actionEvent) {
+        if (BLE == null) return; // no connection was ever started
         BLE.closeConnection();
+        // BTstatus is bound to the connection task's messages, unbind before setting text directly
+        BTstatus.textProperty().unbind();
+        BTstatus.setText("Bluetooth connection closed");
     }
 
     public void onAddFakeData(ActionEvent actionEvent) {
