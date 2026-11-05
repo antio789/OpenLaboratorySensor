@@ -8,6 +8,9 @@ import javafx.event.ActionEvent;
 import javafx.scene.chart.LineChart;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.Pane;
+import javafx.stage.FileChooser;
+
+import java.io.File;
 
 public class TabControl {
     public Pane chartPane; //<Pane fx:id="chartPane" prefWidth="500" prefHeight="300" minWidth="500" minHeight="300"/>
@@ -41,6 +44,18 @@ public class TabControl {
 
     public void onAddFakeData(ActionEvent actionEvent) {
         fileManager.addFakeDataPoint();
+    }
+
+    public void onExport(ActionEvent actionEvent) {
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle("Export experiment data");
+        chooser.setInitialDirectory(fileManager.getLogDirectory().toFile());
+        chooser.setInitialFileName(fileManager.getExportFileName());
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("CSV files", "*.csv"));
+        File target = chooser.showSaveDialog(chartPane.getScene().getWindow());
+        if (target != null) {
+            System.out.println(fileManager.exportCsvFile(target.toPath()));
+        }
     }
 
 }

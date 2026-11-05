@@ -101,8 +101,13 @@ public class BLEReceiver {
 
                 BluetoothGattCharacteristic Config_Gatt = Service.getGattCharacteristicByUuid(SENSOR_CONFIG_UUID);
                 if (Config_Gatt != null) {
-                    Config_Gatt.writeValue(DATA.getSensorPinsConfig().getBytes(StandardCharsets.UTF_8), Map.of("type", "request"));;
-                    updateMessage("sensor config sent");
+                    try {
+                        // "request" = acknowledged write, so the sketch is guaranteed to receive the full config
+                        Config_Gatt.writeValue(DATA.getSensorPinsConfig().getBytes(StandardCharsets.UTF_8), Map.of("type", "request"));
+                        updateMessage("sensor config sent");
+                    } catch (Exception ex) {
+                        updateMessage("Bluetooth error sending sensor config: " + ex.getMessage());
+                    }
                 }
 
                 BluetoothGattCharacteristic Cycle_Gatt = Service.getGattCharacteristicByUuid(SENSOR_CYCLE_UUID);

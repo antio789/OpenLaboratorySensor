@@ -7,14 +7,6 @@
 BLEService sensorService("a117480e-14a0-482e-b417-629d8829a1c0");
 BLEUnsignedIntCharacteristic cycleNotify("1d1c079e-e607-4faa-9005-7bc16934f4a0", BLERead | BLENotify);
 BLEUnsignedIntCharacteristic sensorTotal("1d1c079e-e607-4faa-9005-7bc16934f4a1",BLERead);
-// Warning codes reported through warningNotify:
-// 0  - no warning (initial state)
-// 1  - SEQUENCE VIOLATION: upper sensor triggered before the lower sensor (liquid passed S2 first)
-// 2  - SEQUENCE VIOLATION: lower sensor receded before the upper sensor was reached
-// 3  - hovering detected on the upper sensor (unstable liquid level)
-// 4  - liquid dropped fast or power cut: both sensors disconnected simultaneously (cycle counted)
-// 5  - invalid sensor pin config received from the application (empty or malformed)
-// 6  - Bluetooth Low Energy module failed to start at boot (sent once the module recovers)
 BLEUnsignedIntCharacteristic warningNotify("1d1c079e-e607-4faa-9005-7bc16934f4a3", BLERead | BLENotify);
 // config string format: "lower1,upper1;lower2,upper2" sensor numbers are 1-based
 // value size is the max config string length in bytes (BLE allows up to 512); large enough for MAX_SENSORS entries
@@ -127,7 +119,8 @@ bool getStableRead(int pin, bool &lastState, unsigned long &lastTime) {
     if (read != lastState) {
         if ((millis() - lastTime) > STABILITY_DELAY) {
             Serial.print(read);
-            Serial.println(" new position");
+            Serial.print(" new position on pin ");
+            Serial.println(pin);
             lastState = read;
             return read;
         }
@@ -138,10 +131,38 @@ bool getStableRead(int pin, bool &lastState, unsigned long &lastTime) {
     return lastState;
 }
 
+void printWarning(int code) {
+    Serial.print("WARNING: Error Code ");
+    Serial.print(code);
+    Serial.print(" - ");
+    switch (code) {
+        case 1:
+            Serial.println("SEQUENCE VIOLATION: upper sensor triggered before the lower sensor");
+            break;
+        case 2:
+            Serial.println("SEQUENCE VIOLATION: lower sensor receded before the upper sensor was reached");
+            break;
+        case 3:
+            Serial.println("Hovering detected on the upper sensor (unstable liquid level)");
+            break;
+        case 4:
+            Serial.println("Liquid dropped fast or power cut: both sensors disconnected simultaneously (cycle counted)");
+            break;
+        case 5:
+            Serial.println("Invalid sensor pin config received from the application");
+            break;
+        case 6:
+            Serial.println("Bluetooth Low Energy module failed to start at boot (recovered)");
+            break;
+        default:
+            Serial.println("Unknown warning code");
+            break;
+    }
+}
+
 void sendWarning(int code) {
     if(code != previousWarning){
-        Serial.print("WARNING: Error Code ");
-        Serial.println(code);
+        printWarning(code);
         warningNotify.writeValue(code);
         previousWarning = code;
     }
@@ -164,51 +185,56 @@ void runSensor(int i) {
     //0 not blocked, 1 liquid in front
 
     switch (s.state) {
-        case IDLE:
-            if (s2) {
-                sendWarning(1); // D2 triggered before D1
-            } else if (s1) {
-                s.state = D1_ACTIVE;
-            }
-            break;
+            case IDLE:
+                if (s2) {
+                    sendWarning(1); // D2 triggered before D1
+                } else if (s1) {
+                    Serial.println("Low sensor active");
+                    s.state = D1_ACTIVE;
+                }
+                break;
 
-        case D1_ACTIVE:
-            if (s1 && s2) {
-                s.state = BOTH_ACTIVE;
-            } else if (!s1) {
-                sendWarning(2); // Receded before hitting D2
-                s.state = IDLE;
-            }
-            break;
+            case D1_ACTIVE:
+                if (s1 && s2) {
+                    s.state = BOTH_ACTIVE;
+                    Serial.println("Both sensors active");
+                } else if (!s1) {
+                    sendWarning(2); // Receded before hitting D2
+                    s.state = IDLE;
+                }
+                break;
 
-        case BOTH_ACTIVE:
-            if (s1 && !s2) {
-                s.state = D2_RELEASED;
-            } else if (!s1 && !s2) {
-                // Liquid dropped too fast or power cut
-                sendWarning(4);
-                count++;
-                handleCycleComplete(i + 1);
-                s.state = IDLE;
-            }
-            break;
+            case BOTH_ACTIVE:
+                if (s1 && !s2) {
+                    s.state = D2_RELEASED;
+                    Serial.println("High sensor dropped");
+                } else if (!s1 && !s2) {
+                    // Liquid dropped too fast or power cut
+                    sendWarning(4);
+                    count++;
+                    handleCycleComplete(i + 1);
+                    s.state = IDLE;
+                }
+                break;
 
-        case D2_RELEASED:
-            if (!s1 && !s2) {
-                count++;
-                handleCycleComplete(i + 1);
-                s.state = IDLE;
-            } else if (s2) {
-                s.state = BOTH_ACTIVE; // Hovering behavior
-                sendWarning(3);
-            }
-            break;
-    }
+            case D2_RELEASED:
+                if (!s1 && !s2) {
+                    count++;
+                    handleCycleComplete(i + 1);
+                    s.state = IDLE;
+                    Serial.println("Both sensors droppen cycle completed");
+                } else if (s2) {
+                    s.state = BOTH_ACTIVE; // Hovering behavior
+                    sendWarning(3);
+                }
+                break;
+        }
 }
 
 void loop() {
     BLEDevice central = BLE.central();
     if (central.connected() && sensorConfig.written()) {
+        Serial.println("applying config");
         applyConfig();
     }
 

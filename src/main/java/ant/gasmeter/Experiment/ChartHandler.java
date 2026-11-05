@@ -57,31 +57,4 @@ public class ChartHandler {
             }
         });
     }
-
-    public List<XYChart.Series<Number,Number>> populateseries() throws IOException {
-        List<List<String>> values = fileManager.readCsvData();
-        if(values.isEmpty()) throw new IOException("No data found");
-        int sensors = (values.getFirst().size()) / 3;
-        List<XYChart.Series<Number, Number>> result = new ArrayList<>();
-        for (int i = 0; i < sensors; i++) {
-            XYChart.Series<Number, Number> s = new XYChart.Series<>();
-            s.setName("Sensor " + (i + 1));
-            double volume = 0;
-            for (List<String> point : values) {
-                int timeIdx = i * 3 + 1;
-                int volumeIdx = i * 3 + 2;
-                String date = point.get(timeIdx);
-                String vol = point.get(volumeIdx);
-                if (date == null || date.isEmpty() || vol == null || vol.isEmpty()) continue;
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd_MM_yy_HH_mm_ss");
-                LocalDateTime time = LocalDateTime.parse(date,formatter);
-                Duration duration = Duration.between(fileManager.experimentStartTime,time);
-                double days = duration.toDays();
-                volume += Double.parseDouble(vol);
-                s.getData().add(new XYChart.Data<>(days,volume));
-            }
-            result.add(s);
-        }
-        return result;
-    }
 }

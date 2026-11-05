@@ -45,13 +45,8 @@ public class ExperimentFileManager {
             if (!Files.exists(outputDir)) {
                 Files.createDirectories(outputDir);
             }
-            List<String> headerCells = new ArrayList<>();
-            for (int i = 0; i < sensorResolutions.size(); i++) {
-                headerCells.add("sensor" + (i + 1) + "_count");
-                headerCells.add("sensor" + (i + 1) + "_time");
-                headerCells.add("sensor" + (i + 1) + "_volume");
-            }
-            Files.write(csvFilePath, List.of(String.join(",", headerCells)), StandardCharsets.UTF_8, StandardOpenOption.CREATE);
+            // event-log format: one self-contained row per completed cycle, no empty cells
+            Files.write(csvFilePath, List.of("sensor,count,time,volume"), StandardCharsets.UTF_8, StandardOpenOption.CREATE);
             System.out.println("CSV written to: " + csvFilePath.toAbsolutePath());
         } catch (IOException e) {
             System.err.println("Failed to write CSV: " + e.getMessage());
@@ -86,9 +81,12 @@ public class ExperimentFileManager {
             return "Failed to write CSV: " + e.getMessage();
         }
     }
+
+    //returns the data rows of the csv, header row skipped
     public List<List<String>> readCsvData() throws IOException {
         try (BufferedReader reader = Files.newBufferedReader(csvFilePath)){
             return reader.lines()
+                    .skip(1)
                     .map(line -> Arrays.asList(line.split(",")))
                     .toList();
         }/*catch (IOException e){
@@ -101,30 +99,13 @@ public class ExperimentFileManager {
             protected Void call() {
                 if (sensor < 1 || sensor > sensorResolutions.size()) return null;
                 sensorCycleCounts.set(sensor - 1, sensorCycleCounts.get(sensor - 1) + 1);
+                sensorCumulativeVolumes.set(sensor - 1, sensorCumulativeVolumes.get(sensor - 1) + getSensorResolution(sensor));
                 try {
-                    List<String> line = new ArrayList<>();
-                    for (int i = 0; i < sensorResolutions.size(); i++) {
-                        if (i == sensor - 1) {
-                            line.add(String.valueOf(sensorCycleCounts.get(i)));
-                            line.add(getTime());
-                            line.add(String.valueOf(getSensorResolution(sensor)));
-                        } else {
-                            line.add(String.valueOf(sensorCycleCounts.get(i)));
-                            line.add("");
-                            line.add("");
-                        }
-                    }
-                    Files.write(
-                            csvFilePath,
-                            List.of(String.join(",", line)),
-                            StandardCharsets.UTF_8,
-                            StandardOpenOption.CREATE,
-                            StandardOpenOption.APPEND
-                    );
+                    String line = sensor + "," + sensorCycleCounts.get(sensor - 1) + "," + getTime() + "," + sensorCumulativeVolumes.get(sensor - 1);
+                    Files.write(csvFilePath, List.of(line), StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
                 } catch (IOException e) {
                     System.err.println("Failed to write CSV: " + e.getMessage());
                 }
-                sensorCumulativeVolumes.set(sensor - 1, sensorCumulativeVolumes.get(sensor - 1) + getSensorResolution(sensor));
                 final double value = sensorCumulativeVolumes.get(sensor - 1);
                 Platform.runLater(() -> {
                     dataPoints.add(new DataPoint(LocalDateTime.now(), sensor, value));
@@ -135,6 +116,52 @@ public class ExperimentFileManager {
         Thread thread = new Thread(task);
         thread.setDaemon(true);
         thread.start();
+    }
+
+    //exports the event log as a wide CSV: one column block per sensor (count, time, cumulative volume),
+    //one row per event, blanks for sensors that did not fire - easy to read and chart in a spreadsheet
+    public Path getLogDirectory(){
+        return csvFilePath.getParent();
+    }
+
+    public String getExportFileName(){
+        return csvFilePath.getFileName().toString().replace("_Experiment_", "_Export_");
+    }
+
+    public String exportCsvFile(Path exportPath){
+        try {
+            List<List<String>> records = readCsvData();
+            List<String> lines = new ArrayList<>();
+            List<String> headerCells = new ArrayList<>();
+            for (int i = 1; i <= getSensorCount(); i++) {
+                headerCells.add("sensor" + i + "_count");
+                headerCells.add("sensor" + i + "_time");
+                headerCells.add("sensor" + i + "_cumulative_volume");
+            }
+            lines.add(String.join(",", headerCells));
+
+            for (List<String> record : records) {
+                int sensor = Integer.parseInt(record.get(0));
+                List<String> cells = new ArrayList<>();
+                for (int i = 1; i <= getSensorCount(); i++) {
+                    if (i == sensor) {
+                        cells.add(record.get(1));  // count
+                        cells.add(record.get(2));  // time
+                        cells.add(record.get(3));  // cumulative volume
+                    } else {
+                        cells.add("");
+                        cells.add("");
+                        cells.add("");
+                    }
+                }
+                lines.add(String.join(",", cells));
+            }
+            Files.write(exportPath, lines, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+            return String.format("Exported to: %s", exportPath.toAbsolutePath());
+        } catch (IOException e) {
+            System.err.println("Failed to write CSV: " + e.getMessage());
+            return "Failed to write CSV: " + e.getMessage();
+        }
     }
 
     public String getSensorPinsConfig(){
