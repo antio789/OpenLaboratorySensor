@@ -15,6 +15,7 @@
         <TextField fx:id="BTstatus" promptText="inactive" maxWidth="800"/>
         <Button text="Close   BT Connection" onAction="#oncloseBT" maxWidth="200"/>
         <Button text="Add Fake Data Point" onAction="#onAddFakeData" maxWidth="200"/>
+        <Button text="Export" onAction="#onExport" maxWidth="200"/>
         <Pane fx:id="chartPane" prefWidth="500" prefHeight="300" minWidth="500" minHeight="300"/>
     </VBox>
 </ScrollPane>

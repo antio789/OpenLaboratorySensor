@@ -115,6 +115,52 @@ public class ExperimentFileManager {
         thread.start();
     }
 
+    //exports the event log as a wide CSV: one column block per sensor (count, time, volume, cumulative volume),
+    //one row per event, blanks for sensors that did not fire - easy to read and chart in a spreadsheet
+    public String exportCsvFile(){
+        String fileName = csvFilePath.getFileName().toString().replace("_Experiment_", "_Export_");
+        Path exportPath = csvFilePath.getParent().resolve(fileName);
+        try {
+            List<List<String>> records = readCsvData();
+            List<String> lines = new ArrayList<>();
+            List<String> headerCells = new ArrayList<>();
+            for (int i = 1; i <= getSensorCount(); i++) {
+                headerCells.add("sensor" + i + "_count");
+                headerCells.add("sensor" + i + "_time");
+                headerCells.add("sensor" + i + "_volume");
+                headerCells.add("sensor" + i + "_cumulative_volume");
+            }
+            lines.add(String.join(",", headerCells));
+
+            double[] cumulative = new double[getSensorCount()];
+            for (List<String> record : records) {
+                int sensor = Integer.parseInt(record.get(0));
+                double volume = Double.parseDouble(record.get(3));
+                cumulative[sensor - 1] += volume;
+                List<String> cells = new ArrayList<>();
+                for (int i = 1; i <= getSensorCount(); i++) {
+                    if (i == sensor) {
+                        cells.add(record.get(1));  // count
+                        cells.add(record.get(2));  // time
+                        cells.add(record.get(3));  // volume of this cycle
+                        cells.add(String.valueOf(cumulative[sensor - 1]));
+                    } else {
+                        cells.add("");
+                        cells.add("");
+                        cells.add("");
+                        cells.add("");
+                    }
+                }
+                lines.add(String.join(",", cells));
+            }
+            Files.write(exportPath, lines, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+            return String.format("Exported to: %s", exportPath.toAbsolutePath());
+        } catch (IOException e) {
+            System.err.println("Failed to write CSV: " + e.getMessage());
+            return "Failed to write CSV: " + e.getMessage();
+        }
+    }
+
     public String getSensorPinsConfig(){
         StringBuilder cfg = new StringBuilder();
         for (int i = 0; i < lowerSensorPins.size(); i++) {

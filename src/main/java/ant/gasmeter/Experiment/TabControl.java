@@ -43,4 +43,8 @@ public class TabControl {
         fileManager.addFakeDataPoint();
     }
 
+    public void onExport(ActionEvent actionEvent) {
+        System.out.println(fileManager.exportCsvFile());
+    }
+
 }
