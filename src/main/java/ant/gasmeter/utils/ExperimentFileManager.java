@@ -117,9 +117,15 @@ public class ExperimentFileManager {
 
     //exports the event log as a wide CSV: one column block per sensor (count, time, cumulative volume),
     //one row per event, blanks for sensors that did not fire - easy to read and chart in a spreadsheet
-    public String exportCsvFile(){
-        String fileName = csvFilePath.getFileName().toString().replace("_Experiment_", "_Export_");
-        Path exportPath = csvFilePath.getParent().resolve(fileName);
+    public Path getLogDirectory(){
+        return csvFilePath.getParent();
+    }
+
+    public String getExportFileName(){
+        return csvFilePath.getFileName().toString().replace("_Experiment_", "_Export_");
+    }
+
+    public String exportCsvFile(Path exportPath){
         try {
             List<List<String>> records = readCsvData();
             List<String> lines = new ArrayList<>();
