@@ -13,6 +13,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ExperimentFileManager {
     private final Path csvFilePath;
@@ -21,7 +22,7 @@ public class ExperimentFileManager {
     private final List<String> lowerSensorPins;
     private final List<String> upperSensorPins;
     public ObservableList<DataPoint> dataPoints = FXCollections.observableArrayList();
-    private final List<Integer> sensorCycleCounts;
+    private final List<AtomicInteger> sensorCycleCounts;
     private final List<Double> sensorCumulativeVolumes;
 
     public ExperimentFileManager(String name, List<Double> sensorResolutions, List<String> lowerSensorPins, List<String> upperSensorPins){
@@ -29,7 +30,7 @@ public class ExperimentFileManager {
         this.sensorCycleCounts = new ArrayList<>();
         this.sensorCumulativeVolumes = new ArrayList<>();
         for (int i = 0; i < sensorResolutions.size(); i++) {
-            this.sensorCycleCounts.add(0);
+            this.sensorCycleCounts.add(new AtomicInteger(0));
             this.sensorCumulativeVolumes.add(0.0);
         }
         this.lowerSensorPins = lowerSensorPins;
@@ -109,16 +110,16 @@ public class ExperimentFileManager {
 
     public int getSensorCycleCount(int sensor){
         if (sensor < 1 || sensor > sensorCycleCounts.size()) return 0;
-        return sensorCycleCounts.get(sensor - 1);
+        return sensorCycleCounts.get(sensor - 1).get();
     }
 
     //writes one cycle row for the sensor; runs on a background thread
     private void writeCycle(final int sensor){
         if (sensor < 1 || sensor > sensorResolutions.size()) return;
-        sensorCycleCounts.set(sensor - 1, sensorCycleCounts.get(sensor - 1) + 1);
+        int count = sensorCycleCounts.get(sensor - 1).incrementAndGet();
         sensorCumulativeVolumes.set(sensor - 1, sensorCumulativeVolumes.get(sensor - 1) + getSensorResolution(sensor));
         try {
-            String line = sensor + "," + sensorCycleCounts.get(sensor - 1) + "," + getTime() + "," + sensorCumulativeVolumes.get(sensor - 1);
+            String line = sensor + "," + count + "," + getTime() + "," + sensorCumulativeVolumes.get(sensor - 1);
             Files.write(csvFilePath, List.of(line), StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
         } catch (IOException e) {
             System.err.println("Failed to write CSV: " + e.getMessage());
