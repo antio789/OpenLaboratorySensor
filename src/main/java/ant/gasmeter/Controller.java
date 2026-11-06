@@ -88,7 +88,14 @@ public class Controller {
         List<Tab> experimentTabs = tabPane.getTabs().stream()
                 .filter(tab -> !tab.getText().equals("New Experiment") && !tab.getText().equals("Dashboard"))
                 .toList();
-        experimentCards.keySet().retainAll(experimentTabs);
+        // remove the cards of closed experiments from the map and from the container
+        experimentCards.entrySet().removeIf(entry -> {
+            if (!experimentTabs.contains(entry.getKey())) {
+                experimentsContainer.getChildren().remove(entry.getValue());
+                return true;
+            }
+            return false;
+        });
         for (Tab tab : experimentTabs) {
             if (!(tab.getUserData() instanceof TabControl control)) continue;
             VBox card = experimentCards.get(tab);
