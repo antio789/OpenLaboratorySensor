@@ -117,7 +117,19 @@ public class BLEReceiver {
             if (logger != null) logger.log("Bluetooth error: " + ex.getMessage());
             throw new RuntimeException(ex);
         }
-        BluetoothGattService Service = sensor.getGattServiceByUuid(ARDUINO_SERVICE_UUID);
+        // after a (re)connect BlueZ may still be discovering the services, so retry the lookup
+        BluetoothGattService Service = null;
+        for (int attempt = 0; attempt < 5 && Service == null; attempt++) {
+            sensor.getGattServices(); // forces the wrapper to resolve the available services
+            Service = sensor.getGattServiceByUuid(ARDUINO_SERVICE_UUID);
+            if (Service == null) {
+                Thread.sleep(500);
+            }
+        }
+        if (Service == null) {
+            if (logger != null) logger.log("ERROR: sensor service not found on device");
+            return;
+        }
         Service.refreshGattCharacteristics();
 
         // on a first connection BlueZ may still be discovering the characteristics,
