@@ -11,6 +11,8 @@ import javafx.concurrent.Task;
 import javafx.scene.control.TextField;
 import org.freedesktop.dbus.exceptions.DBusException;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
@@ -167,6 +169,42 @@ public class BLEReceiver {
         }
         cycleHandler = new GATT_Cycle_NotificationHandler(Cycle_Gatt.getDbusPath(),DATA,logger);
         deviceManager.registerPropertyHandler(cycleHandler);
+
+        checkTotals(Service);
+    }
+
+    //compares the arduino's per-sensor cycle totals with the app's counts and reconciles the difference;
+    //the arduino keeps counting while disconnected, so a difference means cycles were missed during a dropout
+    private void checkTotals(BluetoothGattService service){
+        try {
+            BluetoothGattCharacteristic totalGatt = service.getGattCharacteristicByUuid(SENSOR_TOTAL_UUID);
+            if (totalGatt == null) {
+                if (logger != null) logger.log("ERROR: sensor total characteristic not found on device");
+                return;
+            }
+            byte[] raw = totalGatt.readValue();
+            if (raw == null || raw.length < DATA.getSensorCount() * 4) {
+                if (logger != null) logger.log("ERROR: could not read sensor totals from device");
+                return;
+            }
+            ByteBuffer buffer = ByteBuffer.wrap(raw).order(ByteOrder.LITTLE_ENDIAN);
+            for (int sensor = 1; sensor <= DATA.getSensorCount(); sensor++) {
+                int arduinoCount = buffer.getInt((sensor - 1) * 4);
+                int appCount = DATA.getSensorCycleCount(sensor);
+                int missed = arduinoCount - appCount;
+                if (logger == null) continue;
+                if (missed > 0) {
+                    logger.log("WARNING: sensor " + sensor + " counted " + missed
+                            + " cycle(s) while the app was disconnected, adding them to the log at reconnection time");
+                    DATA.writeMissedCycles(sensor, missed);
+                } else if (missed < 0) {
+                    logger.log("WARNING: arduino reports " + (-missed)
+                            + " fewer cycle(s) than the app for sensor " + sensor + " (board rebooted?)");
+                }
+            }
+        } catch (Exception ex) {
+            if (logger != null) logger.log("Bluetooth error reading sensor totals: " + ex.getMessage());
+        }
     }
 
     //watches the connection and tries to reconnect when it drops
