@@ -152,7 +152,13 @@ public class ExperimentFileManager {
             lines.add(String.join(",", headerCells));
 
             for (List<String> record : records) {
-                int sensor = Integer.parseInt(record.get(0));
+                if (record.size() < 4) continue; // skip torn or malformed rows
+                int sensor;
+                try {
+                    sensor = Integer.parseInt(record.get(0));
+                } catch (NumberFormatException e) {
+                    continue;
+                }
                 List<String> cells = new ArrayList<>();
                 for (int i = 1; i <= getSensorCount(); i++) {
                     if (i == sensor) {
@@ -169,7 +175,7 @@ public class ExperimentFileManager {
             }
             Files.write(exportPath, lines, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
             return String.format("Exported to: %s", exportPath.toAbsolutePath());
-        } catch (IOException e) {
+        } catch (Exception e) {
             System.err.println("Failed to write CSV: " + e.getMessage());
             return "Failed to write CSV: " + e.getMessage();
         }

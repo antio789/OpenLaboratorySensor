@@ -55,6 +55,11 @@ public class TabControl {
     }
 
     public void connect(){
+        if (BLE != null) {
+            // a previous connection attempt is still around, stop it before starting a new one
+            state.getBleConnections().remove(BLE);
+            BLE.closeConnection();
+        }
         BLE = new BLEReceiver(fileManager, logger);
         state.getBleConnections().add(BLE);
         logger.log("starting bluetooth connection to " + state.getTabData(Name).macAddress());

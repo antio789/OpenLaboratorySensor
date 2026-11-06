@@ -259,8 +259,11 @@ public class BLEReceiver {
                             .findFirst().orElse(null);
                     if (dev != null && dev.connect()) {
                         sensor = dev;
-                        setupGattNotification(dev);
-                        if (logger != null) logger.log("reconnected and sensor config resent");
+                        if (setupGattNotification(dev)) {
+                            if (logger != null) logger.log("reconnected and sensor config resent");
+                        } else {
+                            if (logger != null) logger.log("reconnected but gatt setup failed, will retry");
+                        }
                     } else {
                         if (logger != null) logger.log("reconnect attempt failed, will retry");
                     }
