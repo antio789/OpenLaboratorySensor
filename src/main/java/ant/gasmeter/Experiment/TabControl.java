@@ -42,6 +42,18 @@ public class TabControl {
         state = ApplicationState.getInstance();
     }
 
+    public String getExperimentName(){
+        return Name;
+    }
+
+    public java.time.Duration getRunningDuration(){
+        return java.time.Duration.between(fileManager.experimentStartTime, java.time.LocalDateTime.now());
+    }
+
+    public boolean isBluetoothConnected(){
+        return BLE != null && BLE.isConnected();
+    }
+
     public void connect(){
         BLE = new BLEReceiver(fileManager, logger);
         state.getBleConnections().add(BLE);

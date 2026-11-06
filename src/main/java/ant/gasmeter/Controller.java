@@ -4,19 +4,25 @@ import ant.gasmeter.BLE_Handler.BLEReceiver;
 import ant.gasmeter.BLE_Handler.BLEScanner;
 import ant.gasmeter.Experiment.TabControl;
 import ant.gasmeter.utils.ConfigManager;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Pos;
-import javafx.scene.chart.LineChart;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
+import javafx.util.Duration;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -40,6 +46,15 @@ public class Controller {
     @FXML
     private CheckBox saveConfigCheck;
     @FXML
+    private ImageView logoView;
+    @FXML
+    private VBox experimentsContainer;
+    @FXML
+    private Label noExperimentsLabel;
+
+    //one dashboard card per open experiment tab
+    private final Map<Tab, VBox> experimentCards = new HashMap<>();
+    @FXML
     private ComboBox<Integer> sensorCountCombo;
     @FXML
     private VBox sensorFieldsContainer;
@@ -52,6 +67,75 @@ public class Controller {
 
     public void initialize() {
         App_state = ApplicationState.getInstance();
+        setupLogo();
+        setupDashboardUpdater();
+    }
+
+    //loads the logo from the resources; replace logo.png to change it
+    private void setupLogo(){
+        Image logo = new Image(Application.class.getResource("logo.png").toExternalForm());
+        logoView.setImage(logo);
+    }
+
+    //refreshes the dashboard cards every second: running time and bluetooth status
+    private void setupDashboardUpdater(){
+        Timeline updater = new Timeline(new KeyFrame(Duration.seconds(1), event -> updateDashboard()));
+        updater.setCycleCount(Timeline.INDEFINITE);
+        updater.play();
+    }
+
+    private void updateDashboard(){
+        List<Tab> experimentTabs = tabPane.getTabs().stream()
+                .filter(tab -> !tab.getText().equals("New Experiment") && !tab.getText().equals("Dashboard"))
+                .toList();
+        experimentCards.keySet().retainAll(experimentTabs);
+        for (Tab tab : experimentTabs) {
+            if (!(tab.getUserData() instanceof TabControl control)) continue;
+            VBox card = experimentCards.get(tab);
+            if (card == null) {
+                card = createExperimentCard(tab, control);
+                experimentCards.put(tab, card);
+                experimentsContainer.getChildren().add(card);
+            }
+            updateExperimentCard(card, control);
+        }
+        noExperimentsLabel.setVisible(experimentTabs.isEmpty());
+        noExperimentsLabel.setManaged(experimentTabs.isEmpty());
+    }
+
+    private VBox createExperimentCard(Tab tab, TabControl control){
+        VBox card = new VBox(5);
+        card.getStyleClass().add("experiment-card");
+        Label title = new Label(control.getExperimentName());
+        title.getStyleClass().add("card-title");
+        Label runningTime = new Label();
+        runningTime.getStyleClass().add("card-subtext");
+        Label status = new Label();
+        card.getChildren().addAll(title, runningTime, status);
+        // clicking the card opens the experiment tab
+        card.setOnMouseClicked(event -> tabPane.getSelectionModel().select(tab));
+        return card;
+    }
+
+    private void updateExperimentCard(VBox card, TabControl control){
+        Label runningTime = (Label) card.getChildren().get(1);
+        Label status = (Label) card.getChildren().get(2);
+        runningTime.setText("running for " + formatDuration(control.getRunningDuration()));
+        if (control.isBluetoothConnected()) {
+            status.setText("● Bluetooth connected");
+            status.getStyleClass().clear();
+            status.getStyleClass().add("card-status-ok");
+        } else {
+            status.setText("● Bluetooth disconnected");
+            status.getStyleClass().clear();
+            status.getStyleClass().add("card-status-down");
+        }
+    }
+
+    private String formatDuration(java.time.Duration duration){
+        long seconds = duration.getSeconds();
+        return String.format("%dd %02dh %02dm %02ds",
+                seconds / 86400, (seconds % 86400) / 3600, (seconds % 3600) / 60, seconds % 60);
     }
 
 
@@ -67,7 +151,7 @@ public class Controller {
     //TRUE if at least one experiment tab is open
     public boolean hasRunningExperiments(){
         for (Tab tab : tabPane.getTabs()) {
-            if (!tab.getText().equals("New Experiment")) return true;
+            if (!tab.getText().equals("New Experiment") && !tab.getText().equals("Dashboard")) return true;
         }
         return false;
     }
@@ -143,6 +227,7 @@ public class Controller {
             newTab.setClosable(false); // closing is done via the Close Experiment button
             TabControl experimentcontroller = loader.getController();
             experimentcontroller.initialise(state.getTabData(experiment_name),experiment_name,newTab);
+            newTab.setUserData(experimentcontroller); // used by the dashboard cards
             newTab.setContent(loader.getRoot());
             tabPane.getTabs().add(newTab);
         }

@@ -286,6 +286,10 @@ public class BLEReceiver {
         }
     }
 
+    public boolean isConnected(){
+        return sensor != null && sensor.isConnected();
+    }
+
     public void closeConnection() {
         if (sensor != null) {
             sensor.disconnect();

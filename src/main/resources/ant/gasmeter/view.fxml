@@ -13,11 +13,27 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.collections.FXCollections?>
 <?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.image.ImageView?>
 <?import java.lang.String?>
 
 
 <?import java.lang.Integer?>
 <TabPane xmlns:fx="http://javafx.com/fxml" fx:controller="ant.gasmeter.Controller" fx:id="tabPane">
+    <Tab text="Dashboard" closable="false">
+        <ScrollPane fitToWidth="true" fitToHeight="true">
+            <VBox fx:id="dashboardRoot" spacing="20.0" styleClass="dashboard">
+                <padding>
+                    <Insets bottom="30.0" left="40.0" right="40.0" top="30.0"/>
+                </padding>
+                <ImageView fx:id="logoView" fitWidth="110" fitHeight="110" preserveRatio="true"/>
+                <Label text="Gas Meter" styleClass="dashboard-title"/>
+                <Label text="Open experiments" styleClass="dashboard-subtitle"/>
+                <VBox fx:id="experimentsContainer" spacing="15.0"/>
+                <Label fx:id="noExperimentsLabel" text="No experiments running. Create one in the New Experiment tab." styleClass="dashboard-hint"/>
+            </VBox>
+        </ScrollPane>
+    </Tab>
     <Tab text="New Experiment" closable="false">
         <ScrollPane fitToWidth="true" fitToHeight="true">
             <VBox spacing="20.0">

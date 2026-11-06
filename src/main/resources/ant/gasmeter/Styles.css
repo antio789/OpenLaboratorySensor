@@ -23,3 +23,56 @@
 .scroll-bar:vertical {
     -fx-background-color: -fx-background;
 }
+
+.dashboard {
+    -fx-background-color: #f5f6fa;
+}
+
+.dashboard-title {
+    -fx-font-size: 30px;
+    -fx-text-fill: #2c3e50;
+    -fx-font-weight: bold;
+}
+
+.dashboard-subtitle {
+    -fx-font-size: 16px;
+    -fx-text-fill: #7f8c8d;
+}
+
+.dashboard-hint {
+    -fx-text-fill: #95a5a6;
+    -fx-font-style: italic;
+}
+
+.experiment-card {
+    -fx-background-color: white;
+    -fx-background-radius: 10;
+    -fx-padding: 15 25 15 25;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 8, 0, 0, 2);
+    -fx-cursor: hand;
+    -fx-max-width: 600;
+}
+
+.experiment-card:hover {
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 10, 0, 0, 3);
+}
+
+.card-title {
+    -fx-font-size: 17px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #2c3e50;
+}
+
+.card-subtext {
+    -fx-text-fill: #7f8c8d;
+}
+
+.card-status-ok {
+    -fx-text-fill: #27ae60;
+    -fx-font-weight: bold;
+}
+
+.card-status-down {
+    -fx-text-fill: #c0392b;
+    -fx-font-weight: bold;
+}
