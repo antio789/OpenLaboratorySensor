@@ -51,7 +51,11 @@
                     </ComboBox>
                 </VBox>
                 <VBox fx:id="sensorFieldsContainer" spacing="10.0"/>
-                <Button text="Continue" onAction="#onContinueClick" maxWidth="200"/>
+                <CheckBox fx:id="saveConfigCheck" text="Save configuration for future use?"/>
+                <HBox spacing="10">
+                    <Button text="Continue" onAction="#onContinueClick" maxWidth="200"/>
+                    <Button text="Load Configuration" onAction="#onLoadConfigClick" maxWidth="200"/>
+                </HBox>
                 <Label fx:id="validationLabel"/>
 
             </VBox>

@@ -3,6 +3,7 @@ package ant.gasmeter;
 import ant.gasmeter.BLE_Handler.BLEReceiver;
 import ant.gasmeter.BLE_Handler.BLEScanner;
 import ant.gasmeter.Experiment.TabControl;
+import ant.gasmeter.utils.ConfigManager;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -16,6 +17,7 @@ import javafx.scene.layout.VBox;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  *
@@ -35,6 +37,8 @@ public class Controller {
 
     @FXML
     private TextField macField;
+    @FXML
+    private CheckBox saveConfigCheck;
     @FXML
     private ComboBox<Integer> sensorCountCombo;
     @FXML
@@ -84,12 +88,54 @@ public class Controller {
         new BLEScanner(macField);
     }
 
+    //opens a dialog with the saved configurations and fills the form with the selected one
+    @FXML
+    public void onLoadConfigClick() {
+        List<String> configs = ConfigManager.listConfigs();
+        if (configs.isEmpty()) {
+            validationLabel.setStyle("-fx-text-fill: red;");
+            validationLabel.setText("No saved configurations found");
+            return;
+        }
+        ChoiceDialog<String> dialog = new ChoiceDialog<>(configs.getFirst(), configs);
+        dialog.setHeaderText("Load configuration");
+        dialog.setContentText("Configuration:");
+        Optional<String> choice = dialog.showAndWait();
+        if (choice.isEmpty() || choice.get() == null) return;
+        try {
+            ApplicationState.TabData data = ConfigManager.loadConfig(choice.get());
+            macField.setText(data.macAddress());
+            sensorCountCombo.setValue(data.resolutions().size()); // rebuilds the sensor rows
+            // the rows are built on the FX thread, fill them once they exist
+            Platform.runLater(() -> {
+                for (int i = 0; i < data.resolutions().size(); i++) {
+                    lowerPinFields.get(i).setText(data.lowerPins().get(i));
+                    upperPinFields.get(i).setText(data.upperPins().get(i));
+                    resolutionFields.get(i).setText(String.valueOf(data.resolutions().get(i)));
+                }
+                validationLabel.setStyle("-fx-text-fill: green;");
+                validationLabel.setText("Configuration '" + choice.get() + "' loaded, adjust the experiment name and continue");
+            });
+        } catch (Exception ex) {
+            validationLabel.setStyle("-fx-text-fill: red;");
+            validationLabel.setText("Failed to load configuration: " + ex.getMessage());
+        }
+    }
+
     @FXML
     public void onContinueClick() throws IOException {
         String experiment_name = experimentNameField.getText();
         ApplicationState state = ApplicationState.getInstance();
 
         if (handleContinue(experiment_name)){
+            if (saveConfigCheck.isSelected()) {
+                try {
+                    ConfigManager.saveConfig(experiment_name, state.getTabData(experiment_name));
+                } catch (IOException ex) {
+                    validationLabel.setStyle("-fx-text-fill: red;");
+                    validationLabel.setText("Experiment started, but saving the configuration failed: " + ex.getMessage());
+                }
+            }
             FXMLLoader loader = new FXMLLoader(Application.class.getResource("Experiment.fxml"));
             loader.load();
             Tab newTab = new Tab();
