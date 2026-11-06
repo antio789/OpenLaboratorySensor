@@ -82,25 +82,51 @@ public class ExperimentFileManager {
         Task<Void> task = new Task<>() {
             @Override
             protected Void call() {
-                if (sensor < 1 || sensor > sensorResolutions.size()) return null;
-                sensorCycleCounts.set(sensor - 1, sensorCycleCounts.get(sensor - 1) + 1);
-                sensorCumulativeVolumes.set(sensor - 1, sensorCumulativeVolumes.get(sensor - 1) + getSensorResolution(sensor));
-                try {
-                    String line = sensor + "," + sensorCycleCounts.get(sensor - 1) + "," + getTime() + "," + sensorCumulativeVolumes.get(sensor - 1);
-                    Files.write(csvFilePath, List.of(line), StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
-                } catch (IOException e) {
-                    System.err.println("Failed to write CSV: " + e.getMessage());
-                }
-                final double value = sensorCumulativeVolumes.get(sensor - 1);
-                Platform.runLater(() -> {
-                    dataPoints.add(new DataPoint(LocalDateTime.now(), sensor, value));
-                });
+                writeCycle(sensor);
                 return null;
             }
         };
         Thread thread = new Thread(task);
         thread.setDaemon(true);
         thread.start();
+    }
+
+    //writes the cycles that happened while the app was disconnected, all at the reconnection time
+    public void writeMissedCycles(final int sensor, final int missedCycles){
+        Task<Void> task = new Task<>() {
+            @Override
+            protected Void call() {
+                for (int i = 0; i < missedCycles; i++) {
+                    writeCycle(sensor);
+                }
+                return null;
+            }
+        };
+        Thread thread = new Thread(task);
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    public int getSensorCycleCount(int sensor){
+        if (sensor < 1 || sensor > sensorCycleCounts.size()) return 0;
+        return sensorCycleCounts.get(sensor - 1);
+    }
+
+    //writes one cycle row for the sensor; runs on a background thread
+    private void writeCycle(final int sensor){
+        if (sensor < 1 || sensor > sensorResolutions.size()) return;
+        sensorCycleCounts.set(sensor - 1, sensorCycleCounts.get(sensor - 1) + 1);
+        sensorCumulativeVolumes.set(sensor - 1, sensorCumulativeVolumes.get(sensor - 1) + getSensorResolution(sensor));
+        try {
+            String line = sensor + "," + sensorCycleCounts.get(sensor - 1) + "," + getTime() + "," + sensorCumulativeVolumes.get(sensor - 1);
+            Files.write(csvFilePath, List.of(line), StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+        } catch (IOException e) {
+            System.err.println("Failed to write CSV: " + e.getMessage());
+        }
+        final double value = sensorCumulativeVolumes.get(sensor - 1);
+        Platform.runLater(() -> {
+            dataPoints.add(new DataPoint(LocalDateTime.now(), sensor, value));
+        });
     }
 
     //exports the event log as a wide CSV: one column block per sensor (count, time, cumulative volume),

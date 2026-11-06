@@ -87,8 +87,9 @@ public class TabControl {
         confirm.setHeaderText("Close experiment " + Name);
         if (confirm.showAndWait().orElse(ButtonType.NO) != ButtonType.YES) return;
 
-        // 2. close the bluetooth connection
+        // 2. reset the board totals for the next experiment, then close the bluetooth connection
         if (BLE != null) {
+            BLE.resetDevice();
             state.getBleConnections().remove(BLE);
             BLE.closeConnection();
         }

@@ -6,11 +6,14 @@
 
 BLEService sensorService("a117480e-14a0-482e-b417-629d8829a1c0");
 BLEUnsignedIntCharacteristic cycleNotify("1d1c079e-e607-4faa-9005-7bc16934f4a0", BLERead | BLENotify);
-BLEUnsignedIntCharacteristic sensorTotal("1d1c079e-e607-4faa-9005-7bc16934f4a1",BLERead);
+// per-sensor cycle totals: 4 bytes per sensor, little endian, updated on every cycle
+BLECharacteristic sensorTotal("1d1c079e-e607-4faa-9005-7bc16934f4a1", BLERead, MAX_SENSORS * 4);
 BLEUnsignedIntCharacteristic warningNotify("1d1c079e-e607-4faa-9005-7bc16934f4a3", BLERead | BLENotify);
 // config string format: "lower1,upper1;lower2,upper2" sensor numbers are 1-based
 // value size is the max config string length in bytes (BLE allows up to 512); large enough for MAX_SENSORS entries
 BLECharacteristic sensorConfig("1d1c079e-e607-4faa-9005-7bc16934f4a4", BLERead | BLEWrite, 120);
+// writing 1 resets all per-sensor totals and state machines, for a clean start of a new experiment
+BLEUnsignedIntCharacteristic resetCommand("1d1c079e-e607-4faa-9005-7bc16934f4a5", BLEWrite);
 
 enum CycleState { IDLE, D1_ACTIVE, BOTH_ACTIVE, D2_RELEASED };
 
@@ -24,7 +27,8 @@ int sensorCount = 0;
 int lowerPins[MAX_SENSORS] = {0};
 int upperPins[MAX_SENSORS] = {0};
 SensorState sensors[MAX_SENSORS];
-unsigned int count = 0;
+// cycle totals per sensor, kept even while no client is connected
+unsigned int sensorCounts[MAX_SENSORS] = {0};
 const unsigned long STABILITY_DELAY = 80;
 unsigned int previousWarning = 0;
 
@@ -46,9 +50,11 @@ void setup() {
   sensorService.addCharacteristic(sensorTotal);
   sensorService.addCharacteristic(warningNotify);
   sensorService.addCharacteristic(sensorConfig);
+  sensorService.addCharacteristic(resetCommand);
   BLE.addService(sensorService);
   cycleNotify.writeValue(0);
   sensorConfig.writeValue("");
+  writeTotals();
   BLE.advertise();
   if (bleFailedAtStart) {
     sendWarning(6);
@@ -168,13 +174,24 @@ void sendWarning(int code) {
     }
 }
 
+void writeTotals() {
+    byte buf[MAX_SENSORS * 4];
+    for (int i = 0; i < MAX_SENSORS; i++) {
+        buf[i * 4]     = sensorCounts[i] & 0xFF;
+        buf[i * 4 + 1] = (sensorCounts[i] >> 8) & 0xFF;
+        buf[i * 4 + 2] = (sensorCounts[i] >> 16) & 0xFF;
+        buf[i * 4 + 3] = (sensorCounts[i] >> 24) & 0xFF;
+    }
+    sensorTotal.writeValue(buf, MAX_SENSORS * 4);
+}
+
 void handleCycleComplete(int sensor) {
     Serial.print("Cycle Validated. Sensor: ");
     Serial.print(sensor);
     Serial.print(" Total: ");
-    Serial.println(count);
+    Serial.println(sensorCounts[sensor - 1]);
 
-    sensorTotal.writeValue(count);
+    writeTotals();
     cycleNotify.writeValue(sensor);
 }
 
@@ -211,7 +228,7 @@ void runSensor(int i) {
                 } else if (!s1 && !s2) {
                     // Liquid dropped too fast or power cut
                     sendWarning(4);
-                    count++;
+                    sensorCounts[i]++;
                     handleCycleComplete(i + 1);
                     s.state = IDLE;
                 }
@@ -219,7 +236,7 @@ void runSensor(int i) {
 
             case D2_RELEASED:
                 if (!s1 && !s2) {
-                    count++;
+                    sensorCounts[i]++;
                     handleCycleComplete(i + 1);
                     s.state = IDLE;
                     Serial.println("Both sensors droppen cycle completed");
@@ -231,11 +248,24 @@ void runSensor(int i) {
         }
 }
 
+// zeroes all per-sensor totals and state machines, used when starting a new experiment
+void fullReset() {
+    for (int i = 0; i < MAX_SENSORS; i++) {
+        sensorCounts[i] = 0;
+        sensors[i] = SensorState();
+    }
+    writeTotals();
+    Serial.println("Full reset: totals and state machines cleared");
+}
+
 void loop() {
     BLEDevice central = BLE.central();
     if (central.connected() && sensorConfig.written()) {
         Serial.println("applying config");
         applyConfig();
+    }
+    if (central.connected() && resetCommand.written() && resetCommand.value() == 1) {
+        fullReset();
     }
 
     for (int i = 0; i < sensorCount; i++) {
