@@ -22,6 +22,7 @@ public class BLEReceiver {
     DeviceManager deviceManager;
     BluetoothDevice sensor;
     GATT_Cycle_NotificationHandler cycleHandler;
+    GATT_Warning_NotificationHandler warningHandler;
     BluetoothGattService gattService;
     boolean deviceResetDone;
     private volatile boolean monitorActive = false;
@@ -36,7 +37,7 @@ public class BLEReceiver {
     String SENSOR_CONFIG_UUID = "1d1c079e-e607-4faa-9005-7bc16934f4a4";
     String SENSOR_RESET_UUID = "1d1c079e-e607-4faa-9005-7bc16934f4a5";
 
-    Map<Integer, String> warningMessages = Map.of(
+    static final Map<Integer, String> warningMessages = Map.of(
             1, "SEQUENCE VIOLATION: S2 switched before S1",
             2, "SEQUENCE VIOLATION: S1 receded before S2",
             3, "Warning: Hovering detected on S2",
@@ -201,6 +202,21 @@ public class BLEReceiver {
         }
         cycleHandler = new GATT_Cycle_NotificationHandler(Cycle_Gatt.getDbusPath(),DATA,logger);
         deviceManager.registerPropertyHandler(cycleHandler);
+
+        // subscribe to the arduino warning codes as well
+        BluetoothGattCharacteristic Warning_Gatt = Service.getGattCharacteristicByUuid(SENSOR_WARNING_UUID);
+        if (Warning_Gatt != null) {
+            try {
+                Warning_Gatt.startNotify();
+                if (warningHandler != null) {
+                    deviceManager.unRegisterPropertyHandler(warningHandler);
+                }
+                warningHandler = new GATT_Warning_NotificationHandler(Warning_Gatt.getDbusPath(), logger);
+                deviceManager.registerPropertyHandler(warningHandler);
+            } catch (Exception ex) {
+                if (logger != null) logger.log("Bluetooth error subscribing to warnings: " + ex.getMessage());
+            }
+        }
 
         checkTotals(Service);
         return true;
