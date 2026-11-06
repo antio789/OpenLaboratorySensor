@@ -12,6 +12,8 @@ BLEUnsignedIntCharacteristic warningNotify("1d1c079e-e607-4faa-9005-7bc16934f4a3
 // config string format: "lower1,upper1;lower2,upper2" sensor numbers are 1-based
 // value size is the max config string length in bytes (BLE allows up to 512); large enough for MAX_SENSORS entries
 BLECharacteristic sensorConfig("1d1c079e-e607-4faa-9005-7bc16934f4a4", BLERead | BLEWrite, 120);
+// writing 1 resets all per-sensor totals and state machines, for a clean start of a new experiment
+BLEUnsignedIntCharacteristic resetCommand("1d1c079e-e607-4faa-9005-7bc16934f4a5", BLEWrite);
 
 enum CycleState { IDLE, D1_ACTIVE, BOTH_ACTIVE, D2_RELEASED };
 
@@ -48,6 +50,7 @@ void setup() {
   sensorService.addCharacteristic(sensorTotal);
   sensorService.addCharacteristic(warningNotify);
   sensorService.addCharacteristic(sensorConfig);
+  sensorService.addCharacteristic(resetCommand);
   BLE.addService(sensorService);
   cycleNotify.writeValue(0);
   sensorConfig.writeValue("");
@@ -245,11 +248,24 @@ void runSensor(int i) {
         }
 }
 
+// zeroes all per-sensor totals and state machines, used when starting a new experiment
+void fullReset() {
+    for (int i = 0; i < MAX_SENSORS; i++) {
+        sensorCounts[i] = 0;
+        sensors[i] = SensorState();
+    }
+    writeTotals();
+    Serial.println("Full reset: totals and state machines cleared");
+}
+
 void loop() {
     BLEDevice central = BLE.central();
     if (central.connected() && sensorConfig.written()) {
         Serial.println("applying config");
         applyConfig();
+    }
+    if (central.connected() && resetCommand.written() && resetCommand.value() == 1) {
+        fullReset();
     }
 
     for (int i = 0; i < sensorCount; i++) {

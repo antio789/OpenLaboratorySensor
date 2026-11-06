@@ -23,6 +23,8 @@ public class BLEReceiver {
     DeviceManager deviceManager;
     BluetoothDevice sensor;
     GATT_Cycle_NotificationHandler cycleHandler;
+    BluetoothGattService gattService;
+    boolean deviceResetDone;
     ExperimentFileManager DATA;
     Logger logger;
 
@@ -31,6 +33,7 @@ public class BLEReceiver {
     String SENSOR_TOTAL_UUID = "1d1c079e-e607-4faa-9005-7bc16934f4a1";
     String SENSOR_WARNING_UUID = "1d1c079e-e607-4faa-9005-7bc16934f4a2";
     String SENSOR_CONFIG_UUID = "1d1c079e-e607-4faa-9005-7bc16934f4a4";
+    String SENSOR_RESET_UUID = "1d1c079e-e607-4faa-9005-7bc16934f4a5";
 
     Map<Integer, String> warningMessages = Map.of(
             1, "SEQUENCE VIOLATION: S2 switched before S1",
@@ -130,7 +133,15 @@ public class BLEReceiver {
             if (logger != null) logger.log("ERROR: sensor service not found on device");
             return;
         }
+        gattService = Service;
         Service.refreshGattCharacteristics();
+
+        // a new experiment starts from zero: reset the board totals once per connection session,
+        // so stale counts from a previous experiment do not trigger missed-cycle warnings
+        if (!deviceResetDone) {
+            resetDevice();
+            deviceResetDone = true;
+        }
 
         // on a first connection BlueZ may still be discovering the characteristics,
         // so retry the lookup instead of silently skipping the config write
@@ -254,6 +265,25 @@ public class BLEReceiver {
         });
         monitor.setDaemon(true);
         monitor.start();
+    }
+
+    //tells the arduino to zero all per-sensor totals and state machines
+    public void resetDevice(){
+        if (gattService == null) {
+            if (logger != null) logger.log("ERROR: cannot reset device, not connected");
+            return;
+        }
+        try {
+            BluetoothGattCharacteristic resetGatt = gattService.getGattCharacteristicByUuid(SENSOR_RESET_UUID);
+            if (resetGatt == null) {
+                if (logger != null) logger.log("ERROR: reset characteristic not found on device");
+                return;
+            }
+            resetGatt.writeValue(new byte[]{1}, Map.of("type", "request"));
+            if (logger != null) logger.log("device totals reset");
+        } catch (Exception ex) {
+            if (logger != null) logger.log("Bluetooth error resetting device: " + ex.getMessage());
+        }
     }
 
     public void closeConnection() {
