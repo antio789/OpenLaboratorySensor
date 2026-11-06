@@ -14,19 +14,15 @@ import org.freedesktop.dbus.exceptions.DBusException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
-//TODO: create log file
-//TODO: have visual textfield for logfile
 //TODO: send warning messages.
 //TODO: save Total values
-//TODO: fix controller for new experiment
-//TODO: Rework GATT cycle to work with updated code
 public class BLEReceiver {
     BluetoothAdapter BTadapter;
     DeviceManager deviceManager;
     BluetoothDevice sensor;
+    GATT_Cycle_NotificationHandler cycleHandler;
     ExperimentFileManager DATA;
     Logger logger;
-
 
     String ARDUINO_SERVICE_UUID = "a117480e-14a0-482e-b417-629d8829a1c0";
     String SENSOR_CYCLE_UUID = "1d1c079e-e607-4faa-9005-7bc16934f4a0";
@@ -43,13 +39,11 @@ public class BLEReceiver {
             6, "ERROR: BLE module failed to start at boot (recovered)"
     );
 
-
     public BLEReceiver(ExperimentFileManager _data, Logger _logger){
         DATA = _data;
         logger = _logger;
     }
 
-    // TODO: Right now doesnt catch errors, find a way to transfer a failed connection attempt
     public void initializeBluetoothConnection(TextField BTstatus, String address){
         Task attemptConnection = new Task<>() {
 
@@ -69,90 +63,28 @@ public class BLEReceiver {
                     deviceManager.setDefaultAdapter(BTadapter);
                     status("All fields valid, connecting to device");
 
-                    sensor = findDevice(address);
-                    if (sensor != null) {
-                        setupGattNotification(sensor);
-                        return true;
-                    }else{
-                        this.status("device not found");
+                    // try a few times before giving up
+                    int maxAttempts = 3;
+                    for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+                        sensor = findDevice(address);
+                        if (sensor != null) break;
+                        if (attempt < maxAttempts) {
+                            status("device not found, retrying (attempt " + (attempt + 1) + " of " + maxAttempts + ")");
+                            Thread.sleep(2000);
+                        }
+                    }
+                    if (sensor == null) {
+                        status("device not found, connection failed");
                         return false;
                     }
+
+                    setupGattNotification(sensor);
+                    startConnectionMonitor(address);
+                    return true;
                 } catch (Exception e) {
-                    throw new RuntimeException(e);
+                    status("Bluetooth error: " + e.getMessage());
+                    return false;
                 }
-            }
-
-            private BluetoothDevice findDevice(String mac){
-                List<BluetoothDevice> devices = deviceManager.getDevices(false);
-                for (BluetoothDevice dev : devices) {
-                    if (dev.getAddress().equalsIgnoreCase(mac)) {
-                        status("device found");
-                        if (dev.connect()) {
-                            status("connected");
-                        } else {
-                            status("connection failed");
-                        }
-                        return dev;
-                    }
-                }
-                status("device not found");
-                return null;
-            }
-
-            private void setupGattNotification(BluetoothDevice sensor) throws DBusException, InterruptedException {
-                try{
-                    Thread.sleep(500);//ensure proper connection before refreshing GATT
-                }catch(InterruptedException ex) {
-                    status("Bluetooth error: " + ex.getMessage());
-                    throw new RuntimeException(ex);
-                }
-                BluetoothGattService Service = sensor.getGattServiceByUuid(ARDUINO_SERVICE_UUID);
-                Service.refreshGattCharacteristics();
-
-                // on a first connection BlueZ may still be discovering the characteristics,
-                // so retry the lookup instead of silently skipping the config write
-                BluetoothGattCharacteristic Config_Gatt = null;
-                for (int attempt = 0; attempt < 5 && Config_Gatt == null; attempt++) {
-                    Config_Gatt = Service.getGattCharacteristicByUuid(SENSOR_CONFIG_UUID);
-                    if (Config_Gatt == null) {
-                        Service.refreshGattCharacteristics();
-                        Thread.sleep(500);
-                    }
-                }
-                if (Config_Gatt == null) {
-                    status("sensor config characteristic not found on device");
-                } else {
-                    try {
-                        // "request" = acknowledged write, so the sketch is guaranteed to receive the full config
-                        Config_Gatt.writeValue(
-                                DATA.getSensorPinsConfig().getBytes(StandardCharsets.UTF_8),
-                                Map.of("type", "request"));
-                        status("sensor config sent");
-                    } catch (Exception ex) {
-                        status("Bluetooth error sending sensor config: " + ex.getMessage());
-                    }
-                }
-
-                BluetoothGattCharacteristic Cycle_Gatt = null;
-                for (int attempt = 0; attempt < 5 && Cycle_Gatt == null; attempt++) {
-                    Cycle_Gatt = Service.getGattCharacteristicByUuid(SENSOR_CYCLE_UUID);
-                    if (Cycle_Gatt == null) {
-                        Service.refreshGattCharacteristics();
-                        Thread.sleep(500);
-                    }
-                }
-
-                if (Cycle_Gatt == null) {
-                    status("cycle characteristic not found on device");
-                    return;
-                }
-                try {
-                    Cycle_Gatt.startNotify();
-                } catch (Exception ex) {
-                    status("Bluetooth error: " + ex.getMessage());
-                    throw new RuntimeException(ex);
-                }
-                deviceManager.registerPropertyHandler(new GATT_Cycle_NotificationHandler(Cycle_Gatt.getDbusPath(),DATA,logger));
             }
         };
         BTstatus.textProperty().bind(attemptConnection.messageProperty());
@@ -160,6 +92,121 @@ public class BLEReceiver {
         thread.setDaemon(true);
         thread.start();
     }
+
+    private BluetoothDevice findDevice(String mac){
+        List<BluetoothDevice> devices = deviceManager.getDevices(false);
+        for (BluetoothDevice dev : devices) {
+            if (dev.getAddress().equalsIgnoreCase(mac)) {
+                if (logger != null) logger.log("device found, connecting");
+                if (dev.connect()) {
+                    if (logger != null) logger.log("connected");
+                    return dev;
+                }
+                if (logger != null) logger.log("ERROR: connection to device failed");
+                return null;
+            }
+        }
+        return null;
+    }
+
+    private void setupGattNotification(BluetoothDevice sensor) throws DBusException, InterruptedException {
+        try{
+            Thread.sleep(500);//ensure proper connection before refreshing GATT
+        }catch(InterruptedException ex) {
+            if (logger != null) logger.log("Bluetooth error: " + ex.getMessage());
+            throw new RuntimeException(ex);
+        }
+        BluetoothGattService Service = sensor.getGattServiceByUuid(ARDUINO_SERVICE_UUID);
+        Service.refreshGattCharacteristics();
+
+        // on a first connection BlueZ may still be discovering the characteristics,
+        // so retry the lookup instead of silently skipping the config write
+        BluetoothGattCharacteristic Config_Gatt = null;
+        for (int attempt = 0; attempt < 5 && Config_Gatt == null; attempt++) {
+            Config_Gatt = Service.getGattCharacteristicByUuid(SENSOR_CONFIG_UUID);
+            if (Config_Gatt == null) {
+                Service.refreshGattCharacteristics();
+                Thread.sleep(500);
+            }
+        }
+        if (Config_Gatt == null) {
+            if (logger != null) logger.log("ERROR: sensor config characteristic not found on device");
+        } else {
+            try {
+                // "request" = acknowledged write, so the sketch is guaranteed to receive the full config
+                Config_Gatt.writeValue(
+                        DATA.getSensorPinsConfig().getBytes(StandardCharsets.UTF_8),
+                        Map.of("type", "request"));
+                if (logger != null) logger.log("sensor config sent");
+            } catch (Exception ex) {
+                if (logger != null) logger.log("Bluetooth error sending sensor config: " + ex.getMessage());
+            }
+        }
+
+        BluetoothGattCharacteristic Cycle_Gatt = null;
+        for (int attempt = 0; attempt < 5 && Cycle_Gatt == null; attempt++) {
+            Cycle_Gatt = Service.getGattCharacteristicByUuid(SENSOR_CYCLE_UUID);
+            if (Cycle_Gatt == null) {
+                Service.refreshGattCharacteristics();
+                Thread.sleep(500);
+            }
+        }
+
+        if (Cycle_Gatt == null) {
+            if (logger != null) logger.log("ERROR: cycle characteristic not found on device");
+            return;
+        }
+        try {
+            Cycle_Gatt.startNotify();
+        } catch (Exception ex) {
+            if (logger != null) logger.log("Bluetooth error: " + ex.getMessage());
+            throw new RuntimeException(ex);
+        }
+        // avoid duplicate handlers when reconnecting
+        if (cycleHandler != null) {
+            deviceManager.unregisterPropertyHandler(cycleHandler);
+        }
+        cycleHandler = new GATT_Cycle_NotificationHandler(Cycle_Gatt.getDbusPath(),DATA,logger);
+        deviceManager.registerPropertyHandler(cycleHandler);
+    }
+
+    //watches the connection and tries to reconnect when it drops
+    private void startConnectionMonitor(String address){
+        Thread monitor = new Thread(() -> {
+            while (true) {
+                try {
+                    Thread.sleep(5000);
+                } catch (InterruptedException e) {
+                    return;
+                }
+                if (sensor == null || sensor.isConnected()) continue;
+                if (logger != null) logger.log("connection lost, attempting to reconnect");
+                try {
+                    BluetoothDevice dev = deviceManager.getDevices(false).stream()
+                            .filter(d -> d.getAddress().equalsIgnoreCase(address))
+                            .findFirst().orElse(null);
+                    if (dev != null && dev.connect()) {
+                        sensor = dev;
+                        setupGattNotification(dev);
+                        if (logger != null) logger.log("reconnected and sensor config resent");
+                    } else {
+                        if (logger != null) logger.log("reconnect attempt failed, will retry");
+                    }
+                } catch (Exception ex) {
+                    if (logger != null) logger.log("reconnect attempt failed: " + ex.getMessage());
+                }
+                // give the device time to reappear before the next attempt
+                try {
+                    Thread.sleep(5000);
+                } catch (InterruptedException e) {
+                    return;
+                }
+            }
+        });
+        monitor.setDaemon(true);
+        monitor.start();
+    }
+
     public void closeConnection() {
         if (sensor != null) {
             sensor.disconnect();
