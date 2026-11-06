@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Map;
 
 public class BLEReceiver {
-    BluetoothAdapter BTadapter;
+    BluetoothAdapter btAdapter;
     DeviceManager deviceManager;
     BluetoothDevice sensor;
     GATT_Cycle_NotificationHandler cycleHandler;
@@ -51,7 +51,7 @@ public class BLEReceiver {
         logger = _logger;
     }
 
-    public void initializeBluetoothConnection(TextField BTstatus, String address){
+    public void initializeBluetoothConnection(TextField btStatus, String address){
         Task attemptConnection = new Task<>() {
 
             private void status(String message){
@@ -65,8 +65,8 @@ public class BLEReceiver {
                 try{
                     DeviceManager.createInstance(false);
                     deviceManager = DeviceManager.getInstance();
-                    BTadapter = deviceManager.getAdapters().getFirst();
-                    deviceManager.setDefaultAdapter(BTadapter);
+                    btAdapter = deviceManager.getAdapters().getFirst();
+                    deviceManager.setDefaultAdapter(btAdapter);
                     status("All fields valid, connecting to device");
 
                     // retry the whole connect + gatt setup as a unit: on a fresh connection
@@ -101,7 +101,7 @@ public class BLEReceiver {
                 }
             }
         };
-        BTstatus.textProperty().bind(attemptConnection.messageProperty());
+        btStatus.textProperty().bind(attemptConnection.messageProperty());
         Thread thread = new Thread(attemptConnection);
         thread.setDaemon(true);
         thread.start();
