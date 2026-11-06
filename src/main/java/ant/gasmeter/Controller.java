@@ -55,9 +55,17 @@ public class Controller {
     public void onBTClick(){
         //BLE.initializeBluetoothConnection(BTstatus);
     }
-    @FXML //TODO: this needs to be attached to every specific experiment.
+    @FXML //
     public void closeBT(){
         //ble.closeConnection();
+    }
+
+    //TRUE if at least one experiment tab is open
+    public boolean hasRunningExperiments(){
+        for (Tab tab : tabPane.getTabs()) {
+            if (!tab.getText().equals("New Experiment")) return true;
+        }
+        return false;
     }
 
     public void shutdown(){
@@ -86,8 +94,9 @@ public class Controller {
             loader.load();
             Tab newTab = new Tab();
             newTab.setText(experiment_name);
+            newTab.setClosable(false); // closing is done via the Close Experiment button
             TabControl experimentcontroller = loader.getController();
-            experimentcontroller.initialise(state.getTabData(experiment_name),experiment_name);
+            experimentcontroller.initialise(state.getTabData(experiment_name),experiment_name,newTab);
             newTab.setContent(loader.getRoot());
             tabPane.getTabs().add(newTab);
         }

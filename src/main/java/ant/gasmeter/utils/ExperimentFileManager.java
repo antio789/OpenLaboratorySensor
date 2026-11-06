@@ -14,8 +14,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-//TODO: rework for it to be able to take a csv file and be created multiple times.
-//TODO: remove from main application state can be reused, just ensure that it can always operate in the background, as each experiemnt will have its own.
 public class ExperimentFileManager {
     private final Path csvFilePath;
     public final LocalDateTime experimentStartTime;
@@ -67,18 +65,6 @@ public class ExperimentFileManager {
         LocalDateTime date = LocalDateTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd_MM_yy_HH_mm_ss");
         return date.format(formatter);
-    }
-
-//TODO: push files to own folder, ask first to create one if not present
-    public String copyCsvFile(){
-        Path datacopy = Paths.get(System.getProperty("user.home"), "Documents").resolve(String.format("Datacopy_%s.csv",getTime()));
-        try{
-            Files.copy(csvFilePath,datacopy, StandardCopyOption.REPLACE_EXISTING);
-            return String.format("File copied at : %s", datacopy.toAbsolutePath());
-        } catch (IOException e) {
-            System.err.println("Failed to write CSV: " + e.getMessage());
-            return "Failed to write CSV: " + e.getMessage();
-        }
     }
 
     //returns the data rows of the csv, header row skipped

@@ -1,6 +1,7 @@
 package ant.gasmeter.BLE_Handler;
 
 import ant.gasmeter.utils.ExperimentFileManager;
+import ant.gasmeter.utils.Logger;
 import org.freedesktop.dbus.handlers.AbstractPropertiesChangedHandler;
 import org.freedesktop.dbus.interfaces.Properties;
 import org.freedesktop.dbus.types.Variant;
@@ -11,10 +12,12 @@ import java.util.Map;
 public class GATT_Cycle_NotificationHandler extends AbstractPropertiesChangedHandler {
     private final String CharacterPath;
     private final ExperimentFileManager DATA;
+    private final Logger logger;
 
-    public GATT_Cycle_NotificationHandler(String path, ExperimentFileManager _data) {
+    public GATT_Cycle_NotificationHandler(String path, ExperimentFileManager _data, Logger _logger) {
         this.CharacterPath = path;
         DATA = _data;
+        logger = _logger;
     }
 
     @Override
@@ -32,18 +35,18 @@ public class GATT_Cycle_NotificationHandler extends AbstractPropertiesChangedHan
             if (first instanceof Byte b) {
                 int sensor = b & 0xFF;
                 if (sensor > 0) {
-                    System.out.println("Cycle completed by sensor " + sensor);
+                    logger.log("sensor " + sensor + " completed a cycle");
                     DATA.writeCycleToCSV(sensor);
                 }
             } else if (first instanceof Number n) {
                 int sensor = n.intValue();
                 if (sensor > 0) {
-                    System.out.println("Cycle completed by sensor " + sensor);
+                    logger.log("sensor " + sensor + " completed a cycle");
                     DATA.writeCycleToCSV(sensor);
                 }
             }
         }else{
-            System.err.println("Received signal with wrong value type: " + value.getClass().getName());
+            logger.log("ERROR: received cycle signal with wrong value type: " + value.getClass().getName());
         }
 
     }

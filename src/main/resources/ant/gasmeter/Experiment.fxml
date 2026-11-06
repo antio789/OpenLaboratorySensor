@@ -13,9 +13,11 @@
         </padding>
         <Button text="Start Bluetooth Connection" onAction="#connect" maxWidth="200"/>
         <TextField fx:id="BTstatus" promptText="inactive" maxWidth="800"/>
-        <Button text="Close   BT Connection" onAction="#oncloseBT" maxWidth="200"/>
+        <Button text="Close BT Connection" onAction="#oncloseBT" maxWidth="200"/>
         <Button text="Add Fake Data Point" onAction="#onAddFakeData" maxWidth="200"/>
         <Button text="Export" onAction="#onExport" maxWidth="200"/>
+        <Button text="Close Experiment" onAction="#onCloseExperiment" maxWidth="200" style="-fx-background-color: #c0392b; -fx-text-fill: white;"/>
         <Pane fx:id="chartPane" prefWidth="500" prefHeight="300" minWidth="500" minHeight="300"/>
+        <TextArea fx:id="logArea" prefWidth="800" prefHeight="150" maxWidth="800" editable="false" promptText="experiment log"/>
     </VBox>
 </ScrollPane>
