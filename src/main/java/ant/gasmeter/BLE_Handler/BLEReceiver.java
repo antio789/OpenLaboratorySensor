@@ -25,6 +25,8 @@ public class BLEReceiver {
     GATT_Cycle_NotificationHandler cycleHandler;
     BluetoothGattService gattService;
     boolean deviceResetDone;
+    private volatile boolean monitorActive = false;
+    private Thread monitorThread;
     ExperimentFileManager DATA;
     Logger logger;
 
@@ -67,24 +69,32 @@ public class BLEReceiver {
                     deviceManager.setDefaultAdapter(BTadapter);
                     status("All fields valid, connecting to device");
 
-                    // try a few times before giving up
+                    // retry the whole connect + gatt setup as a unit: on a fresh connection
+                    // the service may not be discovered yet, a retry usually succeeds
                     int maxAttempts = 3;
                     for (int attempt = 1; attempt <= maxAttempts; attempt++) {
                         sensor = findDevice(address);
-                        if (sensor != null) break;
+                        if (sensor == null) {
+                            if (attempt < maxAttempts) {
+                                status("device not found, retrying (attempt " + (attempt + 1) + " of " + maxAttempts + ")");
+                                Thread.sleep(2000);
+                            }
+                            continue;
+                        }
+                        if (setupGattNotification(sensor)) {
+                            startConnectionMonitor(address);
+                            return true;
+                        }
+                        // setup failed, disconnect and try the whole connection again
+                        sensor.disconnect();
+                        sensor = null;
                         if (attempt < maxAttempts) {
-                            status("device not found, retrying (attempt " + (attempt + 1) + " of " + maxAttempts + ")");
+                            status("gatt setup failed, retrying connection (attempt " + (attempt + 1) + " of " + maxAttempts + ")");
                             Thread.sleep(2000);
                         }
                     }
-                    if (sensor == null) {
-                        status("device not found, connection failed");
-                        return false;
-                    }
-
-                    setupGattNotification(sensor);
-                    startConnectionMonitor(address);
-                    return true;
+                    status("connection failed, could not set up the device");
+                    return false;
                 } catch (Exception e) {
                     status("Bluetooth error: " + e.getMessage());
                     return false;
@@ -113,7 +123,7 @@ public class BLEReceiver {
         return null;
     }
 
-    private void setupGattNotification(BluetoothDevice sensor) throws DBusException, InterruptedException {
+    private boolean setupGattNotification(BluetoothDevice sensor) throws DBusException, InterruptedException {
         try{
             Thread.sleep(500);//ensure proper connection before refreshing GATT
         }catch(InterruptedException ex) {
@@ -131,7 +141,7 @@ public class BLEReceiver {
         }
         if (Service == null) {
             if (logger != null) logger.log("ERROR: sensor service not found on device");
-            return;
+            return false;
         }
         gattService = Service;
         Service.refreshGattCharacteristics();
@@ -178,7 +188,7 @@ public class BLEReceiver {
 
         if (Cycle_Gatt == null) {
             if (logger != null) logger.log("ERROR: cycle characteristic not found on device");
-            return;
+            return false;
         }
         try {
             Cycle_Gatt.startNotify();
@@ -194,6 +204,7 @@ public class BLEReceiver {
         deviceManager.registerPropertyHandler(cycleHandler);
 
         checkTotals(Service);
+        return true;
     }
 
     //compares the arduino's per-sensor cycle totals with the app's counts and reconciles the difference;
@@ -230,20 +241,22 @@ public class BLEReceiver {
         }
     }
 
-    //watches the connection and tries to reconnect when it drops
+    //watches the connection and tries to reconnect when it drops; stops when closeConnection is called
     private void startConnectionMonitor(String address){
+        monitorActive = true;
         Thread monitor = new Thread(() -> {
-            while (true) {
+            while (monitorActive) {
                 try {
                     Thread.sleep(5000);
                 } catch (InterruptedException e) {
                     return;
                 }
+                if (!monitorActive) return;
                 if (sensor == null || sensor.isConnected()) continue;
                 if (logger != null) logger.log("connection lost, attempting to reconnect");
                 try {
                     BluetoothDevice dev = deviceManager.getDevices(false).stream()
-                            .filter(d -> d.getAddress().equalsIgnoreCase(address))
+                            .filter(d -> d.getAddress() != null && d.getAddress().equalsIgnoreCase(address))
                             .findFirst().orElse(null);
                     if (dev != null && dev.connect()) {
                         sensor = dev;
@@ -264,6 +277,7 @@ public class BLEReceiver {
             }
         });
         monitor.setDaemon(true);
+        monitorThread = monitor;
         monitor.start();
     }
 
@@ -291,6 +305,10 @@ public class BLEReceiver {
     }
 
     public void closeConnection() {
+        monitorActive = false; // stop the reconnect monitor
+        if (monitorThread != null) {
+            monitorThread.interrupt();
+        }
         if (sensor != null) {
             sensor.disconnect();
         }
