@@ -182,7 +182,7 @@ public class BLEReceiver {
                 if (logger != null) logger.log("ERROR: sensor total characteristic not found on device");
                 return;
             }
-            byte[] raw = totalGatt.readValue();
+            byte[] raw = totalGatt.readValue(Map.of()); // no options needed, but the BlueZ API requires the map
             if (raw == null || raw.length < DATA.getSensorCount() * 4) {
                 if (logger != null) logger.log("ERROR: could not read sensor totals from device");
                 return;
