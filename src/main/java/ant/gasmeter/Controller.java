@@ -3,31 +3,37 @@ package ant.gasmeter;
 import ant.gasmeter.BLE_Handler.BLEReceiver;
 import ant.gasmeter.BLE_Handler.BLEScanner;
 import ant.gasmeter.Experiment.TabControl;
+import ant.gasmeter.utils.ConfigManager;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Pos;
-import javafx.scene.chart.LineChart;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
+import javafx.util.Duration;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 /**
  *
  * **/
 public class Controller {
-    public Pane chartPane;
     public TextField experimentNameField;
+    public VBox dashboardRoot;
 
     @FXML
     private Label validationLabel;
-    @FXML
-    private TextField BTstatus;
     @FXML
     private TabPane tabPane;
 
@@ -35,6 +41,17 @@ public class Controller {
 
     @FXML
     private TextField macField;
+    @FXML
+    private CheckBox saveConfigCheck;
+    @FXML
+    private ImageView logoView;
+    @FXML
+    private VBox experimentsContainer;
+    @FXML
+    private Label noExperimentsLabel;
+
+    //one dashboard card per open experiment tab
+    private final Map<Tab, VBox> experimentCards = new HashMap<>();
     @FXML
     private ComboBox<Integer> sensorCountCombo;
     @FXML
@@ -48,6 +65,82 @@ public class Controller {
 
     public void initialize() {
         App_state = ApplicationState.getInstance();
+        setupLogo();
+        setupDashboardUpdater();
+    }
+
+    //loads the logo from the resources; replace logo.png to change it
+    private void setupLogo(){
+        Image logo = new Image(Application.class.getResource("logo.png").toExternalForm());
+        logoView.setImage(logo);
+    }
+
+    //refreshes the dashboard cards every second: running time and bluetooth status
+    private void setupDashboardUpdater(){
+        Timeline updater = new Timeline(new KeyFrame(Duration.seconds(1), event -> updateDashboard()));
+        updater.setCycleCount(Timeline.INDEFINITE);
+        updater.play();
+    }
+
+    private void updateDashboard(){
+        List<Tab> experimentTabs = tabPane.getTabs().stream()
+                .filter(tab -> !tab.getText().equals("New Experiment") && !tab.getText().equals("Dashboard"))
+                .toList();
+        // remove the cards of closed experiments from the map and from the container
+        experimentCards.entrySet().removeIf(entry -> {
+            if (!experimentTabs.contains(entry.getKey())) {
+                experimentsContainer.getChildren().remove(entry.getValue());
+                return true;
+            }
+            return false;
+        });
+        for (Tab tab : experimentTabs) {
+            if (!(tab.getUserData() instanceof TabControl control)) continue;
+            VBox card = experimentCards.get(tab);
+            if (card == null) {
+                card = createExperimentCard(tab, control);
+                experimentCards.put(tab, card);
+                experimentsContainer.getChildren().add(card);
+            }
+            updateExperimentCard(card, control);
+        }
+        noExperimentsLabel.setVisible(experimentTabs.isEmpty());
+        noExperimentsLabel.setManaged(experimentTabs.isEmpty());
+    }
+
+    private VBox createExperimentCard(Tab tab, TabControl control){
+        VBox card = new VBox(5);
+        card.getStyleClass().add("experiment-card");
+        Label title = new Label(control.getExperimentName());
+        title.getStyleClass().add("card-title");
+        Label runningTime = new Label();
+        runningTime.getStyleClass().add("card-subtext");
+        Label status = new Label();
+        card.getChildren().addAll(title, runningTime, status);
+        // clicking the card opens the experiment tab
+        card.setOnMouseClicked(event -> tabPane.getSelectionModel().select(tab));
+        return card;
+    }
+
+    private void updateExperimentCard(VBox card, TabControl control){
+        Label runningTime = (Label) card.getChildren().get(1);
+        Label status = (Label) card.getChildren().get(2);
+        runningTime.setText("running for " + formatDuration(control.getRunningDuration()));
+        if (control.isBluetoothConnected()) {
+            status.setText("● Bluetooth connected");
+            status.getStyleClass().clear();
+            status.getStyleClass().add("card-status-ok");
+        } else {
+            status.setText("● Bluetooth disconnected");
+            status.getStyleClass().clear();
+            status.getStyleClass().add("card-status-down");
+        }
+    }
+
+    private String formatDuration(java.time.Duration duration){
+        long seconds = duration.getSeconds();
+        return String.format("%dd %02dh %02dm %02ds",
+                seconds / 86400, (seconds % 86400) / 3600, (seconds % 3600) / 60, seconds % 60);
     }
 
 
@@ -63,7 +156,7 @@ public class Controller {
     //TRUE if at least one experiment tab is open
     public boolean hasRunningExperiments(){
         for (Tab tab : tabPane.getTabs()) {
-            if (!tab.getText().equals("New Experiment")) return true;
+            if (!tab.getText().equals("New Experiment") && !tab.getText().equals("Dashboard")) return true;
         }
         return false;
     }
@@ -84,12 +177,54 @@ public class Controller {
         new BLEScanner(macField);
     }
 
+    //opens a dialog with the saved configurations and fills the form with the selected one
+    @FXML
+    public void onLoadConfigClick() {
+        List<String> configs = ConfigManager.listConfigs();
+        if (configs.isEmpty()) {
+            validationLabel.setStyle("-fx-text-fill: red;");
+            validationLabel.setText("No saved configurations found");
+            return;
+        }
+        ChoiceDialog<String> dialog = new ChoiceDialog<>(configs.getFirst(), configs);
+        dialog.setHeaderText("Load configuration");
+        dialog.setContentText("Configuration:");
+        Optional<String> choice = dialog.showAndWait();
+        if (choice.isEmpty() || choice.get() == null) return;
+        try {
+            ApplicationState.TabData data = ConfigManager.loadConfig(choice.get());
+            macField.setText(data.macAddress());
+            sensorCountCombo.setValue(data.resolutions().size()); // rebuilds the sensor rows
+            // the rows are built on the FX thread, fill them once they exist
+            Platform.runLater(() -> {
+                for (int i = 0; i < data.resolutions().size(); i++) {
+                    lowerPinFields.get(i).setText(data.lowerPins().get(i));
+                    upperPinFields.get(i).setText(data.upperPins().get(i));
+                    resolutionFields.get(i).setText(String.valueOf(data.resolutions().get(i)));
+                }
+                validationLabel.setStyle("-fx-text-fill: green;");
+                validationLabel.setText("Configuration '" + choice.get() + "' loaded, adjust the experiment name and continue");
+            });
+        } catch (Exception ex) {
+            validationLabel.setStyle("-fx-text-fill: red;");
+            validationLabel.setText("Failed to load configuration: " + ex.getMessage());
+        }
+    }
+
     @FXML
     public void onContinueClick() throws IOException {
         String experiment_name = experimentNameField.getText();
         ApplicationState state = ApplicationState.getInstance();
 
         if (handleContinue(experiment_name)){
+            if (saveConfigCheck.isSelected()) {
+                try {
+                    ConfigManager.saveConfig(experiment_name, state.getTabData(experiment_name));
+                } catch (IOException ex) {
+                    validationLabel.setStyle("-fx-text-fill: red;");
+                    validationLabel.setText("Experiment started, but saving the configuration failed: " + ex.getMessage());
+                }
+            }
             FXMLLoader loader = new FXMLLoader(Application.class.getResource("Experiment.fxml"));
             loader.load();
             Tab newTab = new Tab();
@@ -97,6 +232,7 @@ public class Controller {
             newTab.setClosable(false); // closing is done via the Close Experiment button
             TabControl experimentcontroller = loader.getController();
             experimentcontroller.initialise(state.getTabData(experiment_name),experiment_name,newTab);
+            newTab.setUserData(experimentcontroller); // used by the dashboard cards
             newTab.setContent(loader.getRoot());
             tabPane.getTabs().add(newTab);
         }
