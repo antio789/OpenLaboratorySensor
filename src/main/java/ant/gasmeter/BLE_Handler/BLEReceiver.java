@@ -7,8 +7,12 @@ import com.github.hypfvieh.bluetooth.wrapper.BluetoothAdapter;
 import com.github.hypfvieh.bluetooth.wrapper.BluetoothDevice;
 import com.github.hypfvieh.bluetooth.wrapper.BluetoothGattCharacteristic;
 import com.github.hypfvieh.bluetooth.wrapper.BluetoothGattService;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
+import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.scene.control.TextField;
+import javafx.util.Duration;
 import org.freedesktop.dbus.exceptions.DBusException;
 
 import java.nio.ByteBuffer;
@@ -27,6 +31,9 @@ public class BLEReceiver {
     boolean deviceResetDone;
     private volatile boolean monitorActive = false;
     private Thread monitorThread;
+    private TextField btStatusField;
+    private Timeline statusAnimation;
+    private int dotCount;
     ExperimentFileManager DATA;
     Logger logger;
 
@@ -52,10 +59,12 @@ public class BLEReceiver {
     }
 
     public void initializeBluetoothConnection(TextField btStatus, String address){
+        btStatusField = btStatus;
+        btStatus.setEditable(false);
+        showConnecting();
         Task attemptConnection = new Task<>() {
 
             private void status(String message){
-                this.updateMessage(message);
                 if (logger != null) logger.log(message);
             }
 
@@ -85,6 +94,7 @@ public class BLEReceiver {
                         if (setupGattNotification(sensor)) {
                             startConnectionMonitor(address);
                             status("connected: experiment running");
+                            showConnected();
                             return true;
                         }
                         // setup failed, disconnect and try the whole connection again
@@ -96,15 +106,16 @@ public class BLEReceiver {
                         }
                     }
                     status("connection failed, check the log");
+                    showFailed();
                     return false;
                 } catch (Exception e) {
                     if (logger != null) logger.log("Bluetooth error: " + e.getMessage());
                     status("connection failed, check the log");
+                    showFailed();
                     return false;
                 }
             }
         };
-        btStatus.textProperty().bind(attemptConnection.messageProperty());
         Thread thread = new Thread(attemptConnection);
         thread.setDaemon(true);
         thread.start();
@@ -326,12 +337,64 @@ public class BLEReceiver {
         }
     }
 
+    //status field states: animated while connecting, colored final states.
+    //UI updates are wrapped in Platform.runLater because these are called from background threads
+    private void showConnecting(){
+        Platform.runLater(() -> {
+            if (btStatusField == null) return;
+            btStatusField.setStyle("-fx-text-fill: #2980b9;");
+            stopStatusAnimation();
+            dotCount = 0;
+            statusAnimation = new Timeline(new KeyFrame(Duration.millis(400), event -> {
+                dotCount = (dotCount + 1) % 4;
+                btStatusField.setText("connecting" + ".".repeat(dotCount));
+            }));
+            statusAnimation.setCycleCount(Timeline.INDEFINITE);
+            statusAnimation.play();
+        });
+    }
+
+    private void showConnected(){
+        Platform.runLater(() -> {
+            if (btStatusField == null) return;
+            stopStatusAnimation();
+            btStatusField.setStyle("-fx-text-fill: #27ae60; -fx-font-weight: bold;");
+            btStatusField.setText("connected: experiment running");
+        });
+    }
+
+    private void showFailed(){
+        Platform.runLater(() -> {
+            if (btStatusField == null) return;
+            stopStatusAnimation();
+            btStatusField.setStyle("-fx-text-fill: #c0392b; -fx-font-weight: bold;");
+            btStatusField.setText("connection failed, check the log");
+        });
+    }
+
+    private void showDisconnected(){
+        Platform.runLater(() -> {
+            if (btStatusField == null) return;
+            stopStatusAnimation();
+            btStatusField.setStyle("-fx-text-fill: #7f8c8d;");
+            btStatusField.setText("bluetooth connection closed");
+        });
+    }
+
+    private void stopStatusAnimation(){
+        if (statusAnimation != null) {
+            statusAnimation.stop();
+            statusAnimation = null;
+        }
+    }
+
     public boolean isConnected(){
         return sensor != null && sensor.isConnected();
     }
 
     public void closeConnection() {
         monitorActive = false; // stop the reconnect monitor
+        showDisconnected();
         if (monitorThread != null) {
             monitorThread.interrupt();
         }
