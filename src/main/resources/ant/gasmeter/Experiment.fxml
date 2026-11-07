@@ -1,23 +1,33 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-
 <?import javafx.scene.control.*?>
-
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.HBox?>
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.layout.Pane?>
 <ScrollPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="ant.gasmeter.Experiment.TabControl">
-    <VBox spacing="20.0">
+    <VBox spacing="20.0" styleClass="page">
         <padding>
-            <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
+            <Insets bottom="25.0" left="25.0" right="25.0" top="25.0"/>
         </padding>
-        <Button text="Start Bluetooth Connection" onAction="#connect" maxWidth="200"/>
-        <Label fx:id="btStatus" text="inactive" maxWidth="800" styleClass="status-indicator"/>
-        <Button text="Close BT Connection" onAction="#oncloseBT" maxWidth="200"/>
-        <Button text="Add Fake Data Point" onAction="#onAddFakeData" maxWidth="200"/>
-        <Button text="Export" onAction="#onExport" maxWidth="200"/>
-        <Button text="Close Experiment" onAction="#onCloseExperiment" maxWidth="200" style="-fx-background-color: #c0392b; -fx-text-fill: white;"/>
-        <Pane fx:id="chartPane" prefWidth="500" prefHeight="300" minWidth="500" minHeight="300"/>
-        <TextArea fx:id="logArea" prefWidth="800" prefHeight="150" maxWidth="800" editable="false" promptText="experiment log"/>
+        <HBox spacing="15.0" alignment="CENTER_LEFT" styleClass="card">
+            <Label text="Experiment" styleClass="page-title"/>
+            <Label fx:id="btStatus" text="inactive" styleClass="status-indicator"/>
+        </HBox>
+        <HBox spacing="10.0" alignment="CENTER_LEFT" styleClass="card">
+            <Button text="Start Bluetooth Connection" onAction="#connect" styleClass="btn-primary"/>
+            <Button text="Close BT Connection" onAction="#oncloseBT" styleClass="btn-secondary"/>
+            <Button text="Add Fake Data Point" onAction="#onAddFakeData" styleClass="btn-secondary"/>
+            <Button text="Export" onAction="#onExport" styleClass="btn-secondary"/>
+            <Button text="Close Experiment" onAction="#onCloseExperiment" styleClass="btn-danger"/>
+        </HBox>
+        <VBox spacing="10.0" styleClass="card">
+            <Label text="Gas volume" styleClass="card-heading"/>
+            <Pane fx:id="chartPane" prefWidth="700" prefHeight="320" minWidth="500" minHeight="300"/>
+        </VBox>
+        <VBox spacing="10.0" styleClass="card">
+            <Label text="Experiment log" styleClass="card-heading"/>
+            <TextArea fx:id="logArea" prefWidth="800" prefHeight="160" maxWidth="800" editable="false" promptText="experiment log" styleClass="log-area"/>
+        </VBox>
     </VBox>
 </ScrollPane>
