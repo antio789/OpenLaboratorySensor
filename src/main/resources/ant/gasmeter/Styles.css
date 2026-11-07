@@ -1,5 +1,10 @@
+/* ---------- base ---------- */
+.root {
+    -fx-font-family: "Sans Serif";
+}
+
 .label {
-    -fx-text-fill: blue;
+    -fx-text-fill: #22313f;
 }
 
 .tab-pane {
@@ -11,12 +16,7 @@
     -fx-background-color: -fx-focus-color;
 }
 
-.scroll-pane {
-    -fx-background-color: transparent;
-    -fx-padding: 0;
-}
-
-.scroll-pane > .viewport {
+.scroll-pane, .scroll-pane > .viewport {
     -fx-background-color: transparent;
 }
 
@@ -24,19 +24,119 @@
     -fx-background-color: -fx-background;
 }
 
-.dashboard {
-    -fx-background-color: #f5f6fa;
+/* ---------- experiment page ---------- */
+.page {
+    -fx-background-color: #fbfcfd;
 }
 
-.dashboard-title {
-    -fx-font-size: 30px;
-    -fx-text-fill: #2c3e50;
+.hero-band {
+    -fx-background-color: linear-gradient(to right, #0f2b33, #164552);
+}
+
+.hero-title {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+}
+
+.card {
+    -fx-background-color: white;
+    -fx-background-radius: 10;
+    -fx-padding: 16 22 16 22;
+    -fx-effect: dropshadow(gaussian, rgba(15,43,51,0.10), 9, 0, 0, 2);
+    -fx-max-width: 840;
+    -fx-border-width: 3 0 0 0;
+    -fx-border-color: #16a085 transparent transparent transparent;
+    -fx-border-radius: 10 10 10 10;
+}
+
+.card-heading {
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #16a085;
+}
+
+/* ---------- buttons ---------- */
+.btn-primary {
+    -fx-background-color: #16a085;
+    -fx-text-fill: white;
+    -fx-background-radius: 6;
+    -fx-font-weight: bold;
+    -fx-padding: 8 18 8 18;
+    -fx-cursor: hand;
+}
+
+.btn-primary:hover {
+    -fx-background-color: #138d75;
+}
+
+.btn-ghost {
+    -fx-background-color: transparent;
+    -fx-text-fill: #22313f;
+    -fx-border-color: #cfd8dc;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 8 18 8 18;
+    -fx-cursor: hand;
+}
+
+.btn-ghost:hover {
+    -fx-background-color: #eceff1;
+}
+
+.btn-danger {
+    -fx-background-color: #e74c3c;
+    -fx-text-fill: white;
+    -fx-background-radius: 6;
+    -fx-font-weight: bold;
+    -fx-padding: 8 18 8 18;
+    -fx-cursor: hand;
+}
+
+.btn-danger:hover {
+    -fx-background-color: #c0392b;
+}
+
+/* ---------- status pill (dark pill, colored text per state is set inline) ---------- */
+.status-indicator {
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #b2bec3;
+    -fx-background-color: rgba(255,255,255,0.12);
+    -fx-background-radius: 20;
+    -fx-padding: 5 16 5 16;
+}
+
+/* ---------- log ---------- */
+.log-area, .log-area:focused {
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+    -fx-border-color: #eceff1;
+    -fx-background-color: #fbfcfd;
+}
+
+/* ---------- dashboard ---------- */
+.dashboard-hero {
+    -fx-background-color: linear-gradient(to right, #0f2b33, #164552);
+    -fx-padding: 40 40 40 40;
+    -fx-spacing: 10;
+}
+
+.dashboard-hero-title {
+    -fx-font-size: 34px;
+    -fx-text-fill: white;
     -fx-font-weight: bold;
 }
 
-.dashboard-subtitle {
-    -fx-font-size: 16px;
-    -fx-text-fill: #7f8c8d;
+.dashboard-hero-subtitle {
+    -fx-font-size: 15px;
+    -fx-text-fill: #9fb8bf;
+}
+
+.dashboard-body {
+    -fx-background-color: #fbfcfd;
+    -fx-padding: 30 40 30 40;
+    -fx-spacing: 15;
 }
 
 .dashboard-hint {
@@ -47,24 +147,27 @@
 .experiment-card {
     -fx-background-color: white;
     -fx-background-radius: 10;
-    -fx-padding: 15 25 15 25;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 8, 0, 0, 2);
+    -fx-padding: 16 24 16 24;
+    -fx-effect: dropshadow(gaussian, rgba(15,43,51,0.10), 9, 0, 0, 2);
     -fx-cursor: hand;
     -fx-max-width: 600;
+    -fx-border-width: 3 0 0 0;
+    -fx-border-color: #16a085 transparent transparent transparent;
+    -fx-border-radius: 10 10 10 10;
 }
 
 .experiment-card:hover {
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 10, 0, 0, 3);
+    -fx-effect: dropshadow(gaussian, rgba(15,43,51,0.25), 12, 0, 0, 3);
 }
 
 .card-title {
     -fx-font-size: 17px;
     -fx-font-weight: bold;
-    -fx-text-fill: #2c3e50;
+    -fx-text-fill: #22313f;
 }
 
 .card-subtext {
-    -fx-text-fill: #7f8c8d;
+    -fx-text-fill: #78909c;
 }
 
 .card-status-ok {
@@ -75,10 +178,4 @@
 .card-status-down {
     -fx-text-fill: #c0392b;
     -fx-font-weight: bold;
-}
-
-.status-indicator {
-    -fx-font-size: 15px;
-    -fx-font-weight: bold;
-    -fx-text-fill: #95a5a6;
 }
