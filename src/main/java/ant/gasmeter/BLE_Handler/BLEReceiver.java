@@ -16,6 +16,7 @@ import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 public class BLEReceiver {
     BluetoothAdapter btAdapter;
@@ -33,7 +34,7 @@ public class BLEReceiver {
     String ARDUINO_SERVICE_UUID = "a117480e-14a0-482e-b417-629d8829a1c0";
     String SENSOR_CYCLE_UUID = "1d1c079e-e607-4faa-9005-7bc16934f4a0";
     String SENSOR_TOTAL_UUID = "1d1c079e-e607-4faa-9005-7bc16934f4a1";
-    String SENSOR_WARNING_UUID = "1d1c079e-e607-4faa-9005-7bc16934f4a2";
+    String SENSOR_WARNING_UUID = "1d1c079e-e607-4faa-9005-7bc16934f4a3"; // matches warningNotify in the sketch
     String SENSOR_CONFIG_UUID = "1d1c079e-e607-4faa-9005-7bc16934f4a4";
     String SENSOR_RESET_UUID = "1d1c079e-e607-4faa-9005-7bc16934f4a5";
 
@@ -71,9 +72,10 @@ public class BLEReceiver {
 
                     // retry the whole connect + gatt setup as a unit: on a fresh connection
                     // the service may not be discovered yet, a retry usually succeeds
+                    Consumer<String> status = this::status; // routes messages to BTstatus and the log
                     int maxAttempts = 3;
                     for (int attempt = 1; attempt <= maxAttempts; attempt++) {
-                        sensor = findDevice(address);
+                        sensor = findDevice(address, status);
                         if (sensor == null) {
                             if (attempt < maxAttempts) {
                                 status("device not found, retrying (attempt " + (attempt + 1) + " of " + maxAttempts + ")");
@@ -81,7 +83,7 @@ public class BLEReceiver {
                             }
                             continue;
                         }
-                        if (setupGattNotification(sensor)) {
+                        if (setupGattNotification(sensor, status)) {
                             startConnectionMonitor(address);
                             return true;
                         }
@@ -107,23 +109,23 @@ public class BLEReceiver {
         thread.start();
     }
 
-    private BluetoothDevice findDevice(String mac){
+    private BluetoothDevice findDevice(String mac, Consumer<String> status){
         List<BluetoothDevice> devices = deviceManager.getDevices(false);
         for (BluetoothDevice dev : devices) {
             if (dev.getAddress().equalsIgnoreCase(mac)) {
-                if (logger != null) logger.log("device found, connecting");
+                status.accept("device found, connecting");
                 if (dev.connect()) {
-                    if (logger != null) logger.log("connected");
+                    status.accept("connected");
                     return dev;
                 }
-                if (logger != null) logger.log("ERROR: connection to device failed");
+                status.accept("ERROR: connection to device failed");
                 return null;
             }
         }
         return null;
     }
 
-    private boolean setupGattNotification(BluetoothDevice sensor) throws DBusException, InterruptedException {
+    private boolean setupGattNotification(BluetoothDevice sensor, Consumer<String> status) throws DBusException, InterruptedException {
         try{
             Thread.sleep(500);//ensure proper connection before refreshing GATT
         }catch(InterruptedException ex) {
@@ -141,7 +143,7 @@ public class BLEReceiver {
             }
         }
         if (Service == null) {
-            if (logger != null) logger.log("ERROR: sensor service not found on device");
+            status.accept("ERROR: sensor service not found on device");
             return false;
         }
         gattService = Service;
@@ -172,7 +174,7 @@ public class BLEReceiver {
                 Config_Gatt.writeValue(
                         DATA.getSensorPinsConfig().getBytes(StandardCharsets.UTF_8),
                         Map.of("type", "request"));
-                if (logger != null) logger.log("sensor config sent");
+                status.accept("sensor config sent");
             } catch (Exception ex) {
                 if (logger != null) logger.log("Bluetooth error sending sensor config: " + ex.getMessage());
             }
@@ -188,7 +190,7 @@ public class BLEReceiver {
         }
 
         if (Cycle_Gatt == null) {
-            if (logger != null) logger.log("ERROR: cycle characteristic not found on device");
+            status.accept("ERROR: cycle characteristic not found on device");
             return false;
         }
         try {
@@ -206,7 +208,9 @@ public class BLEReceiver {
 
         // subscribe to the arduino warning codes as well
         BluetoothGattCharacteristic Warning_Gatt = Service.getGattCharacteristicByUuid(SENSOR_WARNING_UUID);
-        if (Warning_Gatt != null) {
+        if (Warning_Gatt == null) {
+            if (logger != null) logger.log("ERROR: warning characteristic not found on device");
+        } else {
             try {
                 Warning_Gatt.startNotify();
                 if (warningHandler != null) {
@@ -275,7 +279,8 @@ public class BLEReceiver {
                             .filter(d -> d.getAddress() != null && d.getAddress().equalsIgnoreCase(address))
                             .findFirst().orElse(null);
                     if (dev != null && dev.connect()) {
-                        if (setupGattNotification(dev)) {
+                        Consumer<String> logOnly = message -> { if (logger != null) logger.log(message); };
+                        if (setupGattNotification(dev, logOnly)) {
                             sensor = dev;
                             if (logger != null) logger.log("reconnected and sensor config resent");
                         } else {
