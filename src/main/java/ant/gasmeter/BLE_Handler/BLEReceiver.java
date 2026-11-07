@@ -274,10 +274,12 @@ public class BLEReceiver {
                             .filter(d -> d.getAddress() != null && d.getAddress().equalsIgnoreCase(address))
                             .findFirst().orElse(null);
                     if (dev != null && dev.connect()) {
-                        sensor = dev;
                         if (setupGattNotification(dev)) {
+                            sensor = dev;
                             if (logger != null) logger.log("reconnected and sensor config resent");
                         } else {
+                            // tear the half-open connection down so the monitor actually retries
+                            dev.disconnect();
                             if (logger != null) logger.log("reconnected but gatt setup failed, will retry");
                         }
                     } else {
