@@ -130,10 +130,11 @@ public class BLEReceiver {
             if (logger != null) logger.log("Bluetooth error: " + ex.getMessage());
             throw new RuntimeException(ex);
         }
-        // after a (re)connect BlueZ may still be discovering the services, so retry the lookup
+        // after a (re)connect BlueZ resolves the services asynchronously; the wrapper caches the first
+        // (possibly empty) query result, so we must use refreshGattServices() to force a real re-query
         BluetoothGattService Service = null;
-        for (int attempt = 0; attempt < 5 && Service == null; attempt++) {
-            sensor.getGattServices(); // forces the wrapper to resolve the available services
+        for (int attempt = 0; attempt < 10 && Service == null; attempt++) {
+            sensor.refreshGattServices(); // re-queries BlueZ, bypassing the wrapper's discovery latch
             Service = sensor.getGattServiceByUuid(ARDUINO_SERVICE_UUID);
             if (Service == null) {
                 Thread.sleep(500);
