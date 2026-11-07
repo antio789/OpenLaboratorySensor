@@ -77,7 +77,7 @@ public class BLEReceiver {
                         sensor = findDevice(address);
                         if (sensor == null) {
                             if (attempt < maxAttempts) {
-                                status("device not found, retrying (attempt " + (attempt + 1) + " of " + maxAttempts + ")");
+                                if (logger != null) logger.log("device not found, retrying (attempt " + (attempt + 1) + " of " + maxAttempts + ")");
                                 Thread.sleep(2000);
                             }
                             continue;
@@ -91,7 +91,7 @@ public class BLEReceiver {
                         sensor.disconnect();
                         sensor = null;
                         if (attempt < maxAttempts) {
-                            status("gatt setup failed, retrying connection (attempt " + (attempt + 1) + " of " + maxAttempts + ")");
+                            if (logger != null) logger.log("gatt setup failed, retrying connection (attempt " + (attempt + 1) + " of " + maxAttempts + ")");
                             Thread.sleep(2000);
                         }
                     }
