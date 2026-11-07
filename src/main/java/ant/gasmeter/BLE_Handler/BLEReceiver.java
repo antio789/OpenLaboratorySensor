@@ -16,7 +16,6 @@ import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 
 public class BLEReceiver {
     BluetoothAdapter btAdapter;
@@ -68,14 +67,14 @@ public class BLEReceiver {
                     deviceManager = DeviceManager.getInstance();
                     btAdapter = deviceManager.getAdapters().getFirst();
                     deviceManager.setDefaultAdapter(btAdapter);
-                    status("All fields valid, connecting to device");
+                    status("connecting");
 
+                    // the status field shows only the outcome, details go to the log.
                     // retry the whole connect + gatt setup as a unit: on a fresh connection
                     // the service may not be discovered yet, a retry usually succeeds
-                    Consumer<String> status = this::status; // routes messages to BTstatus and the log
                     int maxAttempts = 3;
                     for (int attempt = 1; attempt <= maxAttempts; attempt++) {
-                        sensor = findDevice(address, status);
+                        sensor = findDevice(address);
                         if (sensor == null) {
                             if (attempt < maxAttempts) {
                                 status("device not found, retrying (attempt " + (attempt + 1) + " of " + maxAttempts + ")");
@@ -83,8 +82,9 @@ public class BLEReceiver {
                             }
                             continue;
                         }
-                        if (setupGattNotification(sensor, status)) {
+                        if (setupGattNotification(sensor)) {
                             startConnectionMonitor(address);
+                            status("connected: experiment running");
                             return true;
                         }
                         // setup failed, disconnect and try the whole connection again
@@ -95,10 +95,11 @@ public class BLEReceiver {
                             Thread.sleep(2000);
                         }
                     }
-                    status("connection failed, could not set up the device");
+                    status("connection failed, check the log");
                     return false;
                 } catch (Exception e) {
-                    status("Bluetooth error: " + e.getMessage());
+                    if (logger != null) logger.log("Bluetooth error: " + e.getMessage());
+                    status("connection failed, check the log");
                     return false;
                 }
             }
@@ -109,23 +110,23 @@ public class BLEReceiver {
         thread.start();
     }
 
-    private BluetoothDevice findDevice(String mac, Consumer<String> status){
+    private BluetoothDevice findDevice(String mac){
         List<BluetoothDevice> devices = deviceManager.getDevices(false);
         for (BluetoothDevice dev : devices) {
             if (dev.getAddress().equalsIgnoreCase(mac)) {
-                status.accept("device found, connecting");
+                if (logger != null) logger.log("device found, connecting");
                 if (dev.connect()) {
-                    status.accept("connected");
+                    if (logger != null) logger.log("connected");
                     return dev;
                 }
-                status.accept("ERROR: connection to device failed");
+                if (logger != null) logger.log("ERROR: connection to device failed");
                 return null;
             }
         }
         return null;
     }
 
-    private boolean setupGattNotification(BluetoothDevice sensor, Consumer<String> status) throws DBusException, InterruptedException {
+    private boolean setupGattNotification(BluetoothDevice sensor) throws DBusException, InterruptedException {
         try{
             Thread.sleep(500);//ensure proper connection before refreshing GATT
         }catch(InterruptedException ex) {
@@ -143,7 +144,7 @@ public class BLEReceiver {
             }
         }
         if (Service == null) {
-            status.accept("ERROR: sensor service not found on device");
+            if (logger != null) logger.log("ERROR: sensor service not found on device");
             return false;
         }
         gattService = Service;
@@ -174,7 +175,7 @@ public class BLEReceiver {
                 Config_Gatt.writeValue(
                         DATA.getSensorPinsConfig().getBytes(StandardCharsets.UTF_8),
                         Map.of("type", "request"));
-                status.accept("sensor config sent");
+                if (logger != null) logger.log("sensor config sent");
             } catch (Exception ex) {
                 if (logger != null) logger.log("Bluetooth error sending sensor config: " + ex.getMessage());
             }
@@ -190,7 +191,7 @@ public class BLEReceiver {
         }
 
         if (Cycle_Gatt == null) {
-            status.accept("ERROR: cycle characteristic not found on device");
+            if (logger != null) logger.log("ERROR: cycle characteristic not found on device");
             return false;
         }
         try {
@@ -279,8 +280,7 @@ public class BLEReceiver {
                             .filter(d -> d.getAddress() != null && d.getAddress().equalsIgnoreCase(address))
                             .findFirst().orElse(null);
                     if (dev != null && dev.connect()) {
-                        Consumer<String> logOnly = message -> { if (logger != null) logger.log(message); };
-                        if (setupGattNotification(dev, logOnly)) {
+                        if (setupGattNotification(dev)) {
                             sensor = dev;
                             if (logger != null) logger.log("reconnected and sensor config resent");
                         } else {
