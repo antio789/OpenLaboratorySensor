@@ -12,7 +12,7 @@
             <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
         </padding>
         <Button text="Start Bluetooth Connection" onAction="#connect" maxWidth="200"/>
-        <TextField fx:id="btStatus" promptText="inactive" maxWidth="800"/>
+        <Label fx:id="btStatus" text="inactive" maxWidth="800" styleClass="status-indicator"/>
         <Button text="Close BT Connection" onAction="#oncloseBT" maxWidth="200"/>
         <Button text="Add Fake Data Point" onAction="#onAddFakeData" maxWidth="200"/>
         <Button text="Export" onAction="#onExport" maxWidth="200"/>

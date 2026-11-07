@@ -11,7 +11,7 @@ import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
-import javafx.scene.control.TextField;
+import javafx.scene.control.Label;
 import javafx.util.Duration;
 import org.freedesktop.dbus.exceptions.DBusException;
 
@@ -31,7 +31,7 @@ public class BLEReceiver {
     boolean deviceResetDone;
     private volatile boolean monitorActive = false;
     private Thread monitorThread;
-    private TextField btStatusField;
+    private Label btStatusField;
     private Timeline statusAnimation;
     private int dotCount;
     ExperimentFileManager DATA;
@@ -58,9 +58,8 @@ public class BLEReceiver {
         logger = _logger;
     }
 
-    public void initializeBluetoothConnection(TextField btStatus, String address){
+    public void initializeBluetoothConnection(Label btStatus, String address){
         btStatusField = btStatus;
-        btStatus.setEditable(false);
         showConnecting();
         Task attemptConnection = new Task<>() {
 
