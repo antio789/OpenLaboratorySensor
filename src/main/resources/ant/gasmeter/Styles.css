@@ -76,3 +76,9 @@
     -fx-text-fill: #c0392b;
     -fx-font-weight: bold;
 }
+
+.status-indicator {
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #95a5a6;
+}

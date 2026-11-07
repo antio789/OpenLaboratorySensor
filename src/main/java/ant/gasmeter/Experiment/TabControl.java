@@ -9,8 +9,8 @@ import javafx.event.ActionEvent;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Tab;
+import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
-import javafx.scene.control.TextField;
 import javafx.scene.layout.Pane;
 import javafx.stage.FileChooser;
 
@@ -19,7 +19,7 @@ import java.io.File;
 public class TabControl {
     public Pane chartPane; //<Pane fx:id="chartPane" prefWidth="500" prefHeight="300" minWidth="500" minHeight="300"/>
     public TextArea logArea;
-    public TextField btStatus;
+    public Label btStatus;
     private Tab tab;
     private String Name;
     ApplicationState state;
@@ -64,11 +64,8 @@ public class TabControl {
 
     public void oncloseBT(ActionEvent actionEvent) {
         if (BLE == null) return;
-        BLE.closeConnection();
+        BLE.closeConnection(); // also settles the status field
         logger.log("bluetooth connection closed");
-        // btStatus is bound to the connection task's messages, unbind before setting text directly
-        btStatus.textProperty().unbind();
-        btStatus.setText("Bluetooth connection closed");
     }
 
     public void onAddFakeData(ActionEvent actionEvent) {

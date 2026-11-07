@@ -7,8 +7,12 @@ import com.github.hypfvieh.bluetooth.wrapper.BluetoothAdapter;
 import com.github.hypfvieh.bluetooth.wrapper.BluetoothDevice;
 import com.github.hypfvieh.bluetooth.wrapper.BluetoothGattCharacteristic;
 import com.github.hypfvieh.bluetooth.wrapper.BluetoothGattService;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
+import javafx.application.Platform;
 import javafx.concurrent.Task;
-import javafx.scene.control.TextField;
+import javafx.scene.control.Label;
+import javafx.util.Duration;
 import org.freedesktop.dbus.exceptions.DBusException;
 
 import java.nio.ByteBuffer;
@@ -27,13 +31,16 @@ public class BLEReceiver {
     boolean deviceResetDone;
     private volatile boolean monitorActive = false;
     private Thread monitorThread;
+    private Label btStatusField;
+    private Timeline statusAnimation;
+    private int dotCount;
     ExperimentFileManager DATA;
     Logger logger;
 
     String ARDUINO_SERVICE_UUID = "a117480e-14a0-482e-b417-629d8829a1c0";
     String SENSOR_CYCLE_UUID = "1d1c079e-e607-4faa-9005-7bc16934f4a0";
     String SENSOR_TOTAL_UUID = "1d1c079e-e607-4faa-9005-7bc16934f4a1";
-    String SENSOR_WARNING_UUID = "1d1c079e-e607-4faa-9005-7bc16934f4a2";
+    String SENSOR_WARNING_UUID = "1d1c079e-e607-4faa-9005-7bc16934f4a3";
     String SENSOR_CONFIG_UUID = "1d1c079e-e607-4faa-9005-7bc16934f4a4";
     String SENSOR_RESET_UUID = "1d1c079e-e607-4faa-9005-7bc16934f4a5";
 
@@ -51,11 +58,12 @@ public class BLEReceiver {
         logger = _logger;
     }
 
-    public void initializeBluetoothConnection(TextField btStatus, String address){
+    public void initializeBluetoothConnection(Label btStatus, String address){
+        btStatusField = btStatus;
+        showConnecting();
         Task attemptConnection = new Task<>() {
 
             private void status(String message){
-                this.updateMessage(message);
                 if (logger != null) logger.log(message);
             }
 
@@ -67,8 +75,9 @@ public class BLEReceiver {
                     deviceManager = DeviceManager.getInstance();
                     btAdapter = deviceManager.getAdapters().getFirst();
                     deviceManager.setDefaultAdapter(btAdapter);
-                    status("All fields valid, connecting to device");
+                    status("connecting");
 
+                    // the status field shows only the outcome, details go to the log.
                     // retry the whole connect + gatt setup as a unit: on a fresh connection
                     // the service may not be discovered yet, a retry usually succeeds
                     int maxAttempts = 3;
@@ -76,32 +85,36 @@ public class BLEReceiver {
                         sensor = findDevice(address);
                         if (sensor == null) {
                             if (attempt < maxAttempts) {
-                                status("device not found, retrying (attempt " + (attempt + 1) + " of " + maxAttempts + ")");
+                                if (logger != null) logger.log("device not found, retrying (attempt " + (attempt + 1) + " of " + maxAttempts + ")");
                                 Thread.sleep(2000);
                             }
                             continue;
                         }
                         if (setupGattNotification(sensor)) {
                             startConnectionMonitor(address);
+                            status("connected: experiment running");
+                            showConnected();
                             return true;
                         }
                         // setup failed, disconnect and try the whole connection again
                         sensor.disconnect();
                         sensor = null;
                         if (attempt < maxAttempts) {
-                            status("gatt setup failed, retrying connection (attempt " + (attempt + 1) + " of " + maxAttempts + ")");
+                            if (logger != null) logger.log("gatt setup failed, retrying connection (attempt " + (attempt + 1) + " of " + maxAttempts + ")");
                             Thread.sleep(2000);
                         }
                     }
-                    status("connection failed, could not set up the device");
+                    status("connection failed, check the log");
+                    showFailed();
                     return false;
                 } catch (Exception e) {
-                    status("Bluetooth error: " + e.getMessage());
+                    if (logger != null) logger.log("Bluetooth error: " + e.getMessage());
+                    status("connection failed, check the log");
+                    showFailed();
                     return false;
                 }
             }
         };
-        btStatus.textProperty().bind(attemptConnection.messageProperty());
         Thread thread = new Thread(attemptConnection);
         thread.setDaemon(true);
         thread.start();
@@ -130,10 +143,11 @@ public class BLEReceiver {
             if (logger != null) logger.log("Bluetooth error: " + ex.getMessage());
             throw new RuntimeException(ex);
         }
-        // after a (re)connect BlueZ may still be discovering the services, so retry the lookup
+        // after a (re)connect BlueZ resolves the services asynchronously; the wrapper caches the first
+        // (possibly empty) query result, so we must use refreshGattServices() to force a real re-query
         BluetoothGattService Service = null;
-        for (int attempt = 0; attempt < 5 && Service == null; attempt++) {
-            sensor.getGattServices(); // forces the wrapper to resolve the available services
+        for (int attempt = 0; attempt < 10 && Service == null; attempt++) {
+            sensor.refreshGattServices(); // re-queries BlueZ, bypassing the wrapper's discovery latch
             Service = sensor.getGattServiceByUuid(ARDUINO_SERVICE_UUID);
             if (Service == null) {
                 Thread.sleep(500);
@@ -205,7 +219,9 @@ public class BLEReceiver {
 
         // subscribe to the arduino warning codes as well
         BluetoothGattCharacteristic Warning_Gatt = Service.getGattCharacteristicByUuid(SENSOR_WARNING_UUID);
-        if (Warning_Gatt != null) {
+        if (Warning_Gatt == null) {
+            if (logger != null) logger.log("ERROR: warning characteristic not found on device");
+        } else {
             try {
                 Warning_Gatt.startNotify();
                 if (warningHandler != null) {
@@ -320,12 +336,64 @@ public class BLEReceiver {
         }
     }
 
+    //status field states: animated while connecting, colored final states.
+    //UI updates are wrapped in Platform.runLater because these are called from background threads
+    private void showConnecting(){
+        Platform.runLater(() -> {
+            if (btStatusField == null) return;
+            btStatusField.setStyle("-fx-text-fill: #2980b9;");
+            stopStatusAnimation();
+            dotCount = 0;
+            statusAnimation = new Timeline(new KeyFrame(Duration.millis(400), event -> {
+                dotCount = (dotCount + 1) % 4;
+                btStatusField.setText("connecting" + ".".repeat(dotCount));
+            }));
+            statusAnimation.setCycleCount(Timeline.INDEFINITE);
+            statusAnimation.play();
+        });
+    }
+
+    private void showConnected(){
+        Platform.runLater(() -> {
+            if (btStatusField == null) return;
+            stopStatusAnimation();
+            btStatusField.setStyle("-fx-text-fill: #27ae60; -fx-font-weight: bold;");
+            btStatusField.setText("connected: experiment running");
+        });
+    }
+
+    private void showFailed(){
+        Platform.runLater(() -> {
+            if (btStatusField == null) return;
+            stopStatusAnimation();
+            btStatusField.setStyle("-fx-text-fill: #c0392b; -fx-font-weight: bold;");
+            btStatusField.setText("connection failed, check the log");
+        });
+    }
+
+    private void showDisconnected(){
+        Platform.runLater(() -> {
+            if (btStatusField == null) return;
+            stopStatusAnimation();
+            btStatusField.setStyle("-fx-text-fill: #7f8c8d;");
+            btStatusField.setText("bluetooth connection closed");
+        });
+    }
+
+    private void stopStatusAnimation(){
+        if (statusAnimation != null) {
+            statusAnimation.stop();
+            statusAnimation = null;
+        }
+    }
+
     public boolean isConnected(){
         return sensor != null && sensor.isConnected();
     }
 
     public void closeConnection() {
         monitorActive = false; // stop the reconnect monitor
+        showDisconnected();
         if (monitorThread != null) {
             monitorThread.interrupt();
         }
