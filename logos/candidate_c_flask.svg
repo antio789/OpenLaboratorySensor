@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- flask + bubbles: laboratory gas production -->
+  <polygon points="50,18 78,18 78,46 100,100 28,100 50,46"
+           fill="none" stroke="#0f2b33" stroke-width="5" stroke-linejoin="round"/>
+  <line x1="34" y1="88" x2="94" y2="88" stroke="#1abc9c" stroke-width="4"/>
+  <circle cx="62" cy="82" r="4" fill="#1abc9c"/>
+  <circle cx="73" cy="93" r="3" fill="#1abc9c"/>
+  <circle cx="64" cy="8"  r="4" fill="#1abc9c"/>
+  <circle cx="77" cy="15" r="3" fill="#1abc9c"/>
+  <circle cx="52.5" cy="16.5" r="2.5" fill="#1abc9c"/>
+</svg>

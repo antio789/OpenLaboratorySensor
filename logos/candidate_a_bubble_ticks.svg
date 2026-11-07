@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- bubble + graduation ticks: gas production, measured -->
+  <g stroke="#0f2b33" stroke-width="3.5" stroke-linecap="round">
+    <line x1="72.7" y1="15.3" x2="74.3"  y2="4.5"/>
+    <line x1="92.7" y1="35.3" x2="103.5" y2="33.7"/>
+    <line x1="107.7" y1="66.4" x2="118.5" y2="70.0"/>
+  </g>
+  <circle cx="64" cy="64" r="40" fill="#1abc9c"/>
+  <circle cx="52" cy="52" r="10" fill="#ffffff"/>
+  <circle cx="103" cy="37" r="7" fill="#1abc9c"/>
+</svg>
