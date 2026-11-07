@@ -6,7 +6,6 @@ import ant.gasmeter.BLE_Handler.BLEReceiver;
 import ant.gasmeter.utils.ExperimentFileManager;
 import ant.gasmeter.utils.Logger;
 import javafx.event.ActionEvent;
-import javafx.scene.chart.LineChart;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Tab;
@@ -20,12 +19,10 @@ import java.io.File;
 public class TabControl {
     public Pane chartPane; //<Pane fx:id="chartPane" prefWidth="500" prefHeight="300" minWidth="500" minHeight="300"/>
     public TextArea logArea;
-    public TextField BTstatus;
+    public TextField btStatus;
     private Tab tab;
     private String Name;
-    TabData initData;
     ApplicationState state;
-    LineChart<Number, Number> lineChart;
     private BLEReceiver BLE;
     ExperimentFileManager fileManager;
     ChartHandler chart;
@@ -34,7 +31,6 @@ public class TabControl {
     public void initialise(TabData data, String name, Tab tab){
         Name=name;
         this.tab = tab;
-        initData = data;
         logger = new Logger(name, logArea);
         logger.log("experiment created with " + data.resolutions().size() + " sensor(s)");
         fileManager = new ExperimentFileManager(name, data.resolutions(), data.lowerPins(), data.upperPins());
@@ -55,19 +51,24 @@ public class TabControl {
     }
 
     public void connect(){
+        if (BLE != null) {
+            // a previous connection attempt is still around, stop it before starting a new one
+            state.getBleConnections().remove(BLE);
+            BLE.closeConnection();
+        }
         BLE = new BLEReceiver(fileManager, logger);
         state.getBleConnections().add(BLE);
         logger.log("starting bluetooth connection to " + state.getTabData(Name).macAddress());
-        BLE.initializeBluetoothConnection(BTstatus, state.getTabData(Name).macAddress());
+        BLE.initializeBluetoothConnection(btStatus, state.getTabData(Name).macAddress());
     }
 
     public void oncloseBT(ActionEvent actionEvent) {
         if (BLE == null) return;
         BLE.closeConnection();
         logger.log("bluetooth connection closed");
-        // BTstatus is bound to the connection task's messages, unbind before setting text directly
-        BTstatus.textProperty().unbind();
-        BTstatus.setText("Bluetooth connection closed");
+        // btStatus is bound to the connection task's messages, unbind before setting text directly
+        btStatus.textProperty().unbind();
+        btStatus.setText("Bluetooth connection closed");
     }
 
     public void onAddFakeData(ActionEvent actionEvent) {

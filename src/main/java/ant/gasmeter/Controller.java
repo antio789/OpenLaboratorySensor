@@ -146,7 +146,7 @@ public class Controller {
 
     @FXML
     public void onBTClick(){
-        //BLE.initializeBluetoothConnection(BTstatus);
+        //BLE.initializeBluetoothConnection(btStatus);
     }
     @FXML //
     public void closeBT(){

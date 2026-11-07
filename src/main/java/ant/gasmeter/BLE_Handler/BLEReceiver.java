@@ -18,10 +18,11 @@ import java.util.List;
 import java.util.Map;
 
 public class BLEReceiver {
-    BluetoothAdapter BTadapter;
+    BluetoothAdapter btAdapter;
     DeviceManager deviceManager;
     BluetoothDevice sensor;
     GATT_Cycle_NotificationHandler cycleHandler;
+    GATT_Warning_NotificationHandler warningHandler;
     BluetoothGattService gattService;
     boolean deviceResetDone;
     private volatile boolean monitorActive = false;
@@ -36,7 +37,7 @@ public class BLEReceiver {
     String SENSOR_CONFIG_UUID = "1d1c079e-e607-4faa-9005-7bc16934f4a4";
     String SENSOR_RESET_UUID = "1d1c079e-e607-4faa-9005-7bc16934f4a5";
 
-    Map<Integer, String> warningMessages = Map.of(
+    static final Map<Integer, String> warningMessages = Map.of(
             1, "SEQUENCE VIOLATION: S2 switched before S1",
             2, "SEQUENCE VIOLATION: S1 receded before S2",
             3, "Warning: Hovering detected on S2",
@@ -50,7 +51,7 @@ public class BLEReceiver {
         logger = _logger;
     }
 
-    public void initializeBluetoothConnection(TextField BTstatus, String address){
+    public void initializeBluetoothConnection(TextField btStatus, String address){
         Task attemptConnection = new Task<>() {
 
             private void status(String message){
@@ -64,8 +65,8 @@ public class BLEReceiver {
                 try{
                     DeviceManager.createInstance(false);
                     deviceManager = DeviceManager.getInstance();
-                    BTadapter = deviceManager.getAdapters().getFirst();
-                    deviceManager.setDefaultAdapter(BTadapter);
+                    btAdapter = deviceManager.getAdapters().getFirst();
+                    deviceManager.setDefaultAdapter(btAdapter);
                     status("All fields valid, connecting to device");
 
                     // retry the whole connect + gatt setup as a unit: on a fresh connection
@@ -100,7 +101,7 @@ public class BLEReceiver {
                 }
             }
         };
-        BTstatus.textProperty().bind(attemptConnection.messageProperty());
+        btStatus.textProperty().bind(attemptConnection.messageProperty());
         Thread thread = new Thread(attemptConnection);
         thread.setDaemon(true);
         thread.start();
@@ -202,6 +203,21 @@ public class BLEReceiver {
         cycleHandler = new GATT_Cycle_NotificationHandler(Cycle_Gatt.getDbusPath(),DATA,logger);
         deviceManager.registerPropertyHandler(cycleHandler);
 
+        // subscribe to the arduino warning codes as well
+        BluetoothGattCharacteristic Warning_Gatt = Service.getGattCharacteristicByUuid(SENSOR_WARNING_UUID);
+        if (Warning_Gatt != null) {
+            try {
+                Warning_Gatt.startNotify();
+                if (warningHandler != null) {
+                    deviceManager.unRegisterPropertyHandler(warningHandler);
+                }
+                warningHandler = new GATT_Warning_NotificationHandler(Warning_Gatt.getDbusPath(), logger);
+                deviceManager.registerPropertyHandler(warningHandler);
+            } catch (Exception ex) {
+                if (logger != null) logger.log("Bluetooth error subscribing to warnings: " + ex.getMessage());
+            }
+        }
+
         checkTotals(Service);
         return true;
     }
@@ -258,9 +274,14 @@ public class BLEReceiver {
                             .filter(d -> d.getAddress() != null && d.getAddress().equalsIgnoreCase(address))
                             .findFirst().orElse(null);
                     if (dev != null && dev.connect()) {
-                        sensor = dev;
-                        setupGattNotification(dev);
-                        if (logger != null) logger.log("reconnected and sensor config resent");
+                        if (setupGattNotification(dev)) {
+                            sensor = dev;
+                            if (logger != null) logger.log("reconnected and sensor config resent");
+                        } else {
+                            // tear the half-open connection down so the monitor actually retries
+                            dev.disconnect();
+                            if (logger != null) logger.log("reconnected but gatt setup failed, will retry");
+                        }
                     } else {
                         if (logger != null) logger.log("reconnect attempt failed, will retry");
                     }
