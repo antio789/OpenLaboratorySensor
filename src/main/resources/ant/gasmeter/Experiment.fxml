@@ -6,7 +6,7 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.layout.Pane?>
 <ScrollPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="ant.gasmeter.Experiment.TabControl">
-    <VBox spacing="0.0" styleClass="page">
+    <VBox styleClass="page">
         <!-- dark header band with title and status -->
         <HBox spacing="20.0" alignment="CENTER_LEFT" styleClass="hero-band">
             <padding>
@@ -22,7 +22,8 @@
             <HBox spacing="10.0" alignment="CENTER_LEFT">
                 <Button text="Start Bluetooth Connection" onAction="#connect" styleClass="btn-primary"/>
                 <Button text="Close BT Connection" onAction="#oncloseBT" styleClass="btn-ghost"/>
-                <Button text="Add Fake Data Point" onAction="#onAddFakeData" styleClass="btn-ghost"/>
+            </HBox>
+            <HBox spacing="10.0" alignment="CENTER_LEFT">
                 <Button text="Export" onAction="#onExport" styleClass="btn-ghost"/>
                 <Button text="Close Experiment" onAction="#onCloseExperiment" styleClass="btn-danger"/>
             </HBox>

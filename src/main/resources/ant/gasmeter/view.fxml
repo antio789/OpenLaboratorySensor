@@ -22,13 +22,13 @@
 <TabPane xmlns:fx="http://javafx.com/fxml" fx:controller="ant.gasmeter.Controller" fx:id="tabPane">
     <Tab text="Dashboard" closable="false">
         <ScrollPane fitToWidth="true" fitToHeight="true">
-            <VBox spacing="0.0" styleClass="page">
+            <VBox styleClass="page">
                 <!-- dark hero band with logo and title -->
                 <HBox spacing="25.0" alignment="CENTER_LEFT" styleClass="dashboard-hero">
                     <ImageView fx:id="logoView" fitWidth="70" fitHeight="70" preserveRatio="true"/>
                     <VBox spacing="5.0">
                         <Label text="Gas Meter" styleClass="dashboard-hero-title"/>
-                        <Label text="Open experiments" styleClass="dashboard-hero-subtitle"/>
+                        <Label text="Open Sensors" styleClass="dashboard-hero-subtitle"/>
                     </VBox>
                 </HBox>
                 <VBox fx:id="dashboardRoot" spacing="15.0" styleClass="dashboard-body">
