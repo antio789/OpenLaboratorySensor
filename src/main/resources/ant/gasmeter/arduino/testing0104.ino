@@ -46,12 +46,17 @@ void setup() {
   }
   BLE.setLocalName("ArduinoSensor");
   BLE.setAdvertisedService(sensorService);
-  sensorService.addCharacteristic(cycleNotify);
-  sensorService.addCharacteristic(sensorTotal);
-  sensorService.addCharacteristic(warningNotify);
-  sensorService.addCharacteristic(sensorConfig);
-  sensorService.addCharacteristic(resetCommand);
-  BLE.addService(sensorService);
+  // debug: ArduinoBLE silently fails these when the attribute pool is exhausted,
+  // which makes the service invisible to clients - print every failure
+  if (!sensorService.addCharacteristic(cycleNotify))   Serial.println("ERROR: addCharacteristic cycleNotify failed");
+  if (!sensorService.addCharacteristic(sensorTotal))  Serial.println("ERROR: addCharacteristic sensorTotal failed");
+  if (!sensorService.addCharacteristic(warningNotify)) Serial.println("ERROR: addCharacteristic warningNotify failed");
+  if (!sensorService.addCharacteristic(sensorConfig))  Serial.println("ERROR: addCharacteristic sensorConfig failed");
+  if (!sensorService.addCharacteristic(resetCommand))   Serial.println("ERROR: addCharacteristic resetCommand failed");
+  if (!BLE.addService(sensorService)) {
+    Serial.println("ERROR: addService failed - GATT attribute limit exceeded?");
+    Serial.println("try removing one characteristic (e.g. resetCommand) and reflash");
+  }
   cycleNotify.writeValue(0);
   sensorConfig.writeValue("");
   writeTotals();
